@@ -5,7 +5,6 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import GlassCard from './GlassCard';
 import ReviewCard from './ReviewCard';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import type { Activity } from '../data/activities';
 import { categoryBadge } from '../data/activities';
 
@@ -14,7 +13,6 @@ interface ActivityDetailProps {
 }
 
 export default function ActivityDetail({ activity }: ActivityDetailProps) {
-  const router = useRouter();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -45,8 +43,8 @@ export default function ActivityDetail({ activity }: ActivityDetailProps) {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.5, duration: 0.6 }}
       >
-        <button
-          onClick={() => router.push('/')}
+        <Link
+          href="/"
           className="group flex items-center gap-2 backdrop-blur-xl bg-[#0a0f0d]/70 border border-white/10 rounded-full px-3 py-2 sm:px-4 sm:py-2.5 text-white/70 hover:text-white hover:border-amber-400/40 transition-all cursor-pointer"
         >
           <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:text-amber-400 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -55,7 +53,7 @@ export default function ActivityDetail({ activity }: ActivityDetailProps) {
             <path d="M12 14v6" />
           </svg>
           <span className="font-outfit text-xs sm:text-sm tracking-wide">Map</span>
-        </button>
+        </Link>
       </motion.div>
 
       {/* ── Hero with parallax background ── */}
