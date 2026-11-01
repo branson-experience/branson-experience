@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏔️ Branson Experience
 
-## Getting Started
+An immersive, non-traditional website showcasing the Branson, Missouri area — designed as a living landscape, not a website.
 
-First, run the development server:
+## ✨ Features
+
+### Immersive Landscape
+- **Parallax forest & hills** — 5 SVG depth layers, scroll-reactive
+- **Atmospheric effects** — 40 animated fireflies, 30 twinkling stars, drifting mist, glowing moon
+- **"Builds as it loads"** — sequential entrance: layers rise → hotspots pop → title fades up
+- **Compass navigation** — radial spinning compass menu instead of a navbar
+- **8 interactive hotspots** — pulsing pins, hover cards, modal detail views
+
+### Activity Pages
+- **Cinematic fly-in transition** — camera zooms from landscape to location
+- Parallax hero with auto-advancing image gallery
+- Scroll-sections: Overview → Highlights → Best For → Visit → Video → Reviews
+- Glassmorphism cards, star ratings, YouTube embeds, floating "Back to Map" button
+
+### AI Agent System
+- **Master Agent** coordinates 6 sub-agents (one per category: themes, water, museums, shows, dining, outdoor)
+- Daily automated reviews: scoring, seasonal relevance, engagement analysis
+- LLM-powered decisions with auto-fallbacks
+- **Email reports** to `ckonkol@gmail.com` every morning at 8 AM UTC
+- **Full audit trail** in Supabase: meetings, decisions, content changes
+
+## 🚀 Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # Add OpenAI, Supabase, Resend keys
+npm run dev                   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📁 Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+app/
+├── activities/[id]/page.tsx          # 8 static activity pages
+├── api/agents/meeting/               # AI agent meeting API
+│   ├── route.ts                      # Vercel Cron endpoint
+│   ├── agent-runner.ts               # MasterAgent + 6 SubAgents
+│   ├── config.ts                     # AI / DB / email config
+│   ├── email-service.ts              # Resend integration
+│   └── supabase-client.ts            # DB operations
+├── api/agents/status/route.ts        # Health check
+├── components/
+│   ├── Landscape.tsx                 # Parallax forest layers
+│   ├── Hotspot.tsx                   # Pulsing pins + hover cards
+│   ├── CreativeNav.tsx               # Circular compass nav
+│   ├── ActivityDetail.tsx            # Full detail view
+│   ├── FlyTransition.tsx             # Cinematic zoom animation
+│   ├── GlassCard.tsx                 # Glassmorphism (3 intensities)
+│   └── ReviewCard.tsx                # Star ratings + reviews
+├── data/activities.ts                # Shared data layer (8 activities)
+├── page.tsx                          # Immersive landing page
+└── globals.css                       # Animations & theming
+supabase/schema.sql                   # 4 tables + RLS policies
+vercel.json                           # Cron: 0 8 * * *
+.env.example                          # Env template
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🤖 Agent Architecture
 
-## Learn More
+```
+MasterAgent (orchestrator)
+├── themes-agent → Silver Dollar City
+├── water-agent → Table Rock Lake, Mountain Grove
+├── museums-agent → Titanic Museum
+├── shows-agent → Shepherd of the Hills
+├── dining-agent → Dolly Parton's Stampede
+└── outdoor-agent → The Show Brig, Branson Landing
 
-To learn more about Next.js, take a look at the following resources:
+Daily: review → score → propose → decide → apply → email report
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Supabase Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create project at [supabase.com](https://supabase.com)
+2. Run `supabase/schema.sql` in SQL Editor
+3. Add URLs/keys to `.env.local`
 
-## Deploy on Vercel
+## Email (Resend)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Sign up at [resend.com](https://resend.com)
+2. Get API key → add to `.env.local`
+3. Verify sender domain
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy to Vercel
+
+```bash
+git init && git add . && git commit -m "Branson Experience"
+# Push to GitHub/GitLab, import on vercel.com
+```
+
+### Vercel Config Required:
+- Add all `.env.local` values as Environment Variables
+- Enable Cron: Dashboard → Settings → Cron Triggers
+  - `0 8 * * *` → `/api/agents/meeting`
+
+## Activities
+
+| Activity | Category | Duration |
+|----------|----------|----------|
+| Silver Dollar City | Adventure | Full Day |
+| Table Rock Lake | Water | Half–Full Day |
+| Titanic Museum | Cultural | 2–3 Hours |
+| Shepherd of the Hills | Outdoor | Evening |
+| Dolly Parton's Stampede | Dining | 4 Hours |
+| Branson Landing | Entertainment | 2–4 Hours |
+| Mountain Grove Lake | Relaxation | Flexible |
+| The Show Brig | Cruise | 2 Hours |
+
+## License
+
+MIT

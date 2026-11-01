@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0f0d;
+  --foreground: #e8f0e4;
 }
 
 @theme inline {
@@ -10,17 +10,216 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-playfair: var(--font-playfair);
+  --font-outfit: var(--font-outfit);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+/* ===== Parallax layers ===== */
+.parallax-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* ===== Hotspot pulse ===== */
+@keyframes hotspotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 170, 50, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(255, 170, 50, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 170, 50, 0);
+  }
+}
+
+@keyframes hotspotRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.hotspot-dot {
+  animation: hotspotPulse 2.5s ease-in-out infinite;
+}
+
+.hotspot-ring {
+  animation: hotspotRing 2.5s ease-out infinite;
+}
+
+.hotspot-enter {
+  animation: floatUp 0.8s ease-out forwards;
+}
+
+/* ===== Firefly particles ===== */
+@keyframes fireflyFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(var(--dx), var(--dy)) scale(0.5);
+    opacity: 0.4;
+  }
+  75% {
+    opacity: 0.9;
+  }
+}
+
+.firefly {
+  animation: fireflyFloat var(--duration) ease-in-out infinite var(--delay);
+}
+
+/* ===== Compass nav ===== */
+@keyframes compassSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes compassPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.compass-outer-ring {
+  animation: compassSpin 120s linear infinite;
+}
+
+.compass-inner-ring {
+  animation: compassPulse 4s ease-in-out infinite;
+}
+
+/* ===== Layer animations ===== */
+@keyframes layerRise {
+  from {
+    transform: translateY(100%) scale(1.05);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.layer-rising {
+  animation: layerRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ===== Scroll indicator ===== */
+@keyframes scrollBounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(10px);
+    opacity: 1;
+  }
+}
+
+.scroll-indicator {
+  animation: scrollBounce 2s ease-in-out infinite;
+}
+
+/* ===== Glow card ===== */
+@keyframes cardGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 170, 50, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 170, 50, 0.3);
+  }
+}
+
+.glow-card {
+  animation: cardGlow 3s ease-in-out infinite;
+}
+
+/* ===== Mist effect ===== */
+@keyframes mistDrift {
+  0% {
+    transform: translateX(-10%) translateY(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateX(10%) translateY(-5%);
+    opacity: 0;
+  }
+}
+
+.mist-layer {
+  animation: mistDrift 20s ease-in-out infinite;
+}
+
+.mist-layer-reverse {
+  animation: mistDrift 25s ease-in-out infinite reverse;
+}
+
+/* ===== Star twinkle ===== */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+.star {
+  animation: twinkle var(--duration) ease-in-out infinite var(--delay);
+}
+
+/* ===== Category badge colors ===== */
+.badge-adventure { background: linear-gradient(135deg, #f97316, #ea580c); }
+.badge-water { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.badge-cultural { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.badge-outdoor { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.badge-entertainment { background: linear-gradient(135deg, #eab308, #ca8a04); }
+.badge-relaxation { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+.badge-dining { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.badge-cruise { background: linear-gradient(135deg, #6366f1, #4f46e5); }
