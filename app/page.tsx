@@ -15,7 +15,7 @@ export default function HomePage() {
   const [showExplore, setShowExplore] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile
+  // Detect mobile on client only — useEffect prevents hydration mismatch
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
     check();

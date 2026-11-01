@@ -29,7 +29,7 @@ export const SUPABASE_CONFIG = {
 // ── Email (Resend) ───────────────────────────────────────────────────────────
 export const EMAIL_CONFIG = {
   resendApiKey: env.RESEND_API_KEY || '',
-  from: env.EMAIL_FROM || 'Branson AI Agent <agent@bransonexperience.com>',
+  from: env.EMAIL_FROM || 'Branson AI Agent <agent@branson-experience.vercel.app>',
   recipients: (env.EMAIL_RECIPIENTS || 'ckonkol@gmail.com').split(',').map(e => e.trim()),
 };
 

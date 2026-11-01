@@ -33,37 +33,7 @@ interface FF {
   dur: string; del: string; sz: number;
 }
 
-function makeFFs(): FF[] {
-  const ffs: FF[] = [];
-  for (let i = 0; i < 40; i++) {
-    ffs.push({
-      id: i,
-      x: Math.random() * 100,
-      y: 20 + Math.random() * 70,
-      dx: (Math.random() - 0.5) * 80,
-      dy: (Math.random() - 0.5) * 80,
-      dur: (4 + Math.random() * 8).toFixed(1) + "s",
-      del: (Math.random() * 6).toFixed(1) + "s",
-      sz: 2 + Math.random() * 3,
-    });
-  }
-  return ffs;
-}
-
 interface StarData { id: number; x: number; y: number; sz: number; dur: string; del: string; }
-
-function makeStars(): StarData[] {
-  const stars: StarData[] = [];
-  for (let i = 0; i < 30; i++) {
-    stars.push({
-      id: i, x: Math.random() * 100, y: Math.random() * 35,
-      sz: 1 + Math.random() * 2,
-      dur: (2 + Math.random() * 4).toFixed(1) + "s",
-      del: (Math.random() * 3).toFixed(1) + "s",
-    });
-  }
-  return stars;
-}
 
 const MIST = [
   { y: 60, w: 40, o: 0.15, delay: 0 },
@@ -75,19 +45,51 @@ interface LandscapeProps { isMobile?: boolean; }
 
 interface PP { y: any; o: any; }
 
+// Deterministic generators — same output every call so SSR === client (no hydration mismatch)
+function makeFFs(count: number): FF[] {
+  const ffs: FF[] = [];
+  for (let i = 0; i < count; i++) {
+    // Seeded from index — deterministic
+    const seed = i * 7 + 13;
+    ffs.push({
+      id: i,
+      x: (seed * 37) % 100,
+      y: 20 + (seed * 19) % 70,
+      dx: ((seed * 23) % 80) - 40,
+      dy: ((seed * 29) % 80) - 40,
+      dur: (4 + (seed * 11) % 80 / 10).toFixed(1) + "s",
+      del: ((seed * 17) % 60) / 10 + "s",
+      sz: 2 + (seed * 31) % 30 / 10,
+    });
+  }
+  return ffs;
+}
+
+function makeStars(count: number): StarData[] {
+  const stars: StarData[] = [];
+  for (let i = 0; i < count; i++) {
+    const seed = i * 5 + 7;
+    stars.push({
+      id: i,
+      x: (seed * 41) % 100,
+      y: (seed * 23) % 35,
+      sz: 1 + (seed * 17) % 20 / 10,
+      dur: (2 + (seed * 13) % 40 / 10).toFixed(1) + "s",
+      del: ((seed * 19) % 30) / 10 + "s",
+    });
+  }
+  return stars;
+}
+
 export default function Landscape({ isMobile = false }: LandscapeProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ container: ref });
-  const [bgUrl, setBgUrl] = useState(BGS[0]);
-  const [ffs, setFfs] = useState<FF[]>([]);
-  const [ok, setOk] = useState(false);
-  const [stars, setStars] = useState<StarData[]>([]);
-  useEffect(() => {
-    setBgUrl(BGS[Math.floor(Math.random() * BGS.length)]);
-    setFfs(makeFFs());
-    setStars(makeStars());
-    setOk(true);
-  }, []);
+  const [bgUrl] = useState(BGS[0]);
+  const [ffs] = useState(() => makeFFs(isMobile ? 10 : 40));
+  const [stars] = useState(() => makeStars(isMobile ? 12 : 30));
+  const [ok, setOk] = useState(true);
+  // Fade layers in after mount
+  useEffect(() => { setOk(true); }, []);
 
   const px: PP[] = [];
   for (let i = 0; i < LAYERS.length; i++) {

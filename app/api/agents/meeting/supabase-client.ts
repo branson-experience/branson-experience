@@ -101,6 +101,12 @@ export async function updateActivityStatus(activityId, updates) {
   return supabasePatch('activities', activityId, updates);
 }
 
+/** Lookup activity UUID by name. */
+export async function getActivityByName(name) {
+  const results = await supabaseGet(`/activities?name=eq.${encodeURIComponent(name)}&select=id`);
+  return results?.[0]?.id || null;
+}
+
 /** Log a content update audit trail. */
 export async function logContentUpdate(activityId, updateType, oldValue, newValue) {
   return supabasePost('content_updates', {

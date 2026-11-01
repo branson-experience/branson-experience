@@ -1,18 +1,8 @@
 // @ts-nocheck
-/**
- * Agent Runner — AI-powered content management orchestrator.
- *
- * Architecture:
- *   MasterAgent coordinates SubAgents, one per activity category.
- *   Each sub-agent reviews its category, scores activities, proposes changes.
- *   The master agent aggregates proposals, calls the LLM for final decisions,
- *   logs everything to Supabase, and emails a summary report.
- */
-
 import { AI_CONFIG, CATEGORIES, SCORING_WEIGHTS, getCurrentSeason, SEASONS, MEETING_CONFIG, log } from './config';
 import { sendEmail, buildDailyReportHTML, buildDailyReportText } from './email-service';
 import {
-  logMeeting, logDecision, getActivityData, updateActivityStatus,
+  logMeeting, logDecision, getActivityData, updateActivityStatus, getActivityByName,
   logContentUpdate, getRecentMeetings,
 } from './supabase-client';
 
@@ -302,6 +292,13 @@ Respond with ONLY a JSON object:
       reason: d.reason,
     }));
 
+    // Build name→UUID map
+    const allActivities = await getActivityData(null, null);
+    const nameToId: Record<string, string> = {};
+    for (const a of allActivities) {
+      nameToId[a.name.toLowerCase()] = a.id;
+    }
+
     let meetingId: string | undefined;
     try {
       meetingId = await logMeeting(
@@ -311,10 +308,15 @@ Respond with ONLY a JSON object:
       );
       log('info', `[master] Meeting logged: ${meetingId}`);
 
-      // Log individual decisions
+      // Log individual decisions (resolve names to UUIDs)
       for (const d of decisionsForLog) {
         if (d.action === 'approve') {
-          await logDecision(meetingId, d.activity, d.decision_action, d.reason);
+          const activityUuid = nameToId[d.activity?.toLowerCase()];
+          if (activityUuid) {
+            await logDecision(meetingId, activityUuid, d.decision_action, d.reason);
+          } else {
+            log('warn', `[master] Decision logged without DB row — activity not found: ${d.activity}`);
+          }
         }
       }
     } catch (err) {
@@ -325,15 +327,20 @@ Respond with ONLY a JSON object:
     const appliedChanges = [];
     for (const d of decisionsForLog) {
       if (d.action !== 'approve') continue;
+      const activityUuid = nameToId[d.activity?.toLowerCase()];
+      if (!activityUuid) {
+        log('warn', `[master] Skipped — activity not in DB: ${d.activity}`);
+        continue;
+      }
       try {
         if (d.decision_action === 'remove') {
-          await updateActivityStatus(d.activity, { status: 'removed', last_reviewed: meetingDate.toISOString() });
+          await updateActivityStatus(activityUuid, { status: 'removed', last_reviewed: meetingDate.toISOString() });
           appliedChanges.push(`${d.activity} → removed`);
         } else if (d.decision_action === 'promote') {
-          await updateActivityStatus(d.activity, { score: 90, status: 'active', last_reviewed: meetingDate.toISOString() });
+          await updateActivityStatus(activityUuid, { score: 90, status: 'active', last_reviewed: meetingDate.toISOString() });
           appliedChanges.push(`${d.activity} → promoted`);
         } else if (d.decision_action === 'demote') {
-          await updateActivityStatus(d.activity, { score: 30, last_reviewed: meetingDate.toISOString() });
+          await updateActivityStatus(activityUuid, { score: 30, last_reviewed: meetingDate.toISOString() });
           appliedChanges.push(`${d.activity} → demoted`);
         }
       } catch (err) {
