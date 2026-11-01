@@ -149,31 +149,30 @@ export default function HomePage() {
                 {!isMobile ? 'Tap any hotspot above •' : 'Tap any point above •'} or explore them all below
               </p>
 
-              {/* Mini activity grid — narrower cards on mobile, horizontally scrollable */}
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-3 sm:pb-4 px-1 sm:px-2 scrollbar-hide">
+              {/* Mini activity grid — single row, horizontal scroll */}
+              <div className="flex gap-3 overflow-x-auto sm:overflow-x-visible sm:flex-wrap sm:justify-center pb-4 px-2 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {hotspots.map((h, i) => (
                   <motion.a
                     key={h.id}
                     href={`/activities/${h.slug}`}
-                    className={`flex-shrink-0 overflow-hidden rounded-xl relative group cursor-pointer ${isMobile ? 'w-36 sm:w-40' : 'w-48'}`}
+                    className="flex-shrink-0 overflow-hidden rounded-xl relative w-[80vw] sm:w-56 md:w-64"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.08, duration: 0.5 }}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
                   >
-                    <div className={`relative ${isMobile ? 'h-24 sm:h-26' : 'h-28'}`}>
+                    <div className="relative h-48 sm:h-48">
                       <img
                         src={h.image}
                         alt={h.title}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d]/90 via-transparent to-transparent" />
-                      <div className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2 right-1.5 sm:right-2">
-                        <div className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-white ${categoryBadge[h.category] ?? 'badge-adventure'}`}>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d]/95 via-[#0a0f0d]/30 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white ${categoryBadge[h.category] ?? 'badge-adventure'}`}>
                           {h.category}
-                        </div>
-                        <p className={`text-white font-outfit font-bold mt-0.5 line-clamp-1 ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{h.title}</p>
+                        </span>
+                        <p className="text-white font-playfair font-bold mt-1 text-base sm:text-lg leading-tight">{h.title}</p>
                       </div>
                     </div>
                   </motion.a>
