@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useCallback } from 'react';
+import { motion } from 'framer-motion';
 
 interface HotspotProps {
   hotspot: {
@@ -31,22 +31,11 @@ const badgeClasses: Record<string, string> = {
 };
 
 export default function Hotspot({ hotspot, index, onSelect, isMobile }: HotspotProps) {
-  const [active, setActive] = useState(false);
   const badgeClass = badgeClasses[hotspot.category] || 'badge-adventure';
 
   const handleClick = useCallback(() => {
-    // Always navigate on tap/click — never toggle popup
     onSelect(hotspot);
   }, [hotspot, onSelect]);
-
-  // Only toggle popup on hover (desktop) — no popup on mobile at all
-  const handleMouseEnter = useCallback(() => {
-    if (!isMobile) setActive(true);
-  }, [isMobile]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (!isMobile) setActive(false);
-  }, [isMobile]);
 
   return (
     <motion.div
@@ -56,25 +45,13 @@ export default function Hotspot({ hotspot, index, onSelect, isMobile }: HotspotP
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, delay: 2.5 + index * 0.25, ease: 'easeOut' }}
     >
-      {/* Touch target — bigger on mobile */}
-      <button
-        className={`absolute cursor-pointer rounded-full bg-transparent ${isMobile ? '-left-5 -top-5 w-10 h-10' : '-left-3 -top-3 w-6 h-6'}`}
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        aria-label={`Explore ${hotspot.title}`}
-      >
-        {/* Pulse rings */}
-        <div className="absolute inset-0 -m-3 rounded-full bg-amber-400/30 hotspot-ring" />
-        <div className="absolute inset-0 -m-1.5 rounded-full bg-amber-400/20 hotspot-ring" style={{ animationDelay: '0.5s' }} />
+      {/* Dot — larger touch target on mobile, tap to explore */}
+      <div className={`relative rounded-full bg-amber-400 hotspot-dot flex items-center justify-center cursor-pointer ${isMobile ? 'w-8 h-8' : 'w-5 h-5'}`}
+        onClick={handleClick}>
+        <div className={`rounded-full bg-white ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
+      </div>
 
-        {/* Dot */}
-        <div className={`absolute inset-0 m-auto rounded-full bg-amber-400 flex items-center justify-center ${isMobile ? 'w-8 h-8' : 'w-5 h-5'}`}>
-          <div className={`rounded-full bg-white ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
-        </div>
-      </button>
-
-      {/* Label */}
+      {/* Label above dot */}
       <motion.div
         className="pointer-events-none"
         initial={{ opacity: 0 }}
@@ -95,33 +72,7 @@ export default function Hotspot({ hotspot, index, onSelect, isMobile }: HotspotP
         </span>
       </motion.div>
 
-      {/* Desktop-only hover card — never renders on mobile */}
-      <AnimatePresence>
-        {!isMobile && active && (
-          <motion.div
-            className="absolute left-10 top-6 w-60 rounded-xl overflow-hidden shadow-2xl pointer-events-auto z-50"
-            style={{ backgroundColor: '#1a1f1c' }}
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 8 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleClick}
-          >
-            <div className="relative h-28">
-              <img src={hotspot.image} alt={hotspot.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <span className={`absolute bottom-2 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white ${badgeClass}`}>
-                {hotspot.category}
-              </span>
-            </div>
-            <div className="p-3">
-              <h3 className="text-white font-playfair font-bold text-sm mb-1">{hotspot.title}</h3>
-              <p className="text-gray-300 text-xs leading-relaxed font-outfit line-clamp-2">{hotspot.description}</p>
-              <span className="text-amber-300 text-xs font-medium">Explore →</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* On mobile: just dot + label, tap navigates. No popup cards. */}
     </motion.div>
   );
 }
