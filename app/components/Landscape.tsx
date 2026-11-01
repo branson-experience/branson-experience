@@ -3,10 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 
+// Real Ozark mountain photos — local files for reliable CDN delivery
+// Sourced from Pexels (CC0) and Wikimedia Commons (public domain)
 const BGS = [
-  "https://images.unsplash.com/photo-1441974231545-c8154874d5f7?w=1920&q=80",
-  "https://images.unsplash.com/photo-1506905925346-0428988f53ed?w=1920&q=80",
-  "https://images.unsplash.com/photo-1596394523518-613a7fa5f7c0?w=1920&q=80",
+  // Table Rock Lake, Branson, Missouri — aerial view of the lake with Ozark hills
+  "/images/ozark-mountain-1.jpg",
+  // Ozark scenery — rolling hills and meadows typical of the Branson region
+  "/images/ozark-mountain-2.jpg",
+  // Scenic view of the Ozarks in autumn light — lush forest and hillside
+  "/images/pexels-ozarks-autumn-HD.jpg",
 ];
 
 const LAYERS = [
