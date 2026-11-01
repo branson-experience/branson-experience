@@ -33,14 +33,14 @@ export default function ReviewCard({ author, date, rating, text, index }: Review
       </div>
 
       {/* Review text */}
-      <p className="text-gray-300 font-outfit text-sm leading-relaxed italic mb-4">
+      <p className="text-gray-300 font-outfit text-sm leading-relaxed italic mb-3 sm:mb-4">
         &ldquo;{text}&rdquo;
       </p>
 
       {/* Author & date */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-white/60 font-outfit text-xs">{author}</span>
-        <span className="text-white/40 font-outfit text-xs">
+        <span className="text-white/40 font-outfit text-xs whitespace-nowrap">
           {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </span>
       </div>

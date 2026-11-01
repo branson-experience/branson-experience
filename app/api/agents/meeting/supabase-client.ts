@@ -23,16 +23,20 @@ function headers(kind = 'service') {
 }
 
 async function supabasePost(table, body) {
+  const h = headers('service');
+  h['Prefer'] = 'return=representation';
   const res = await fetch(`${BASE}/rest/v1/${table}`, {
     method: 'POST',
-    headers: headers('service'),
+    headers: h,
     body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.text().catch(() => res.statusText);
     throw new Error(`Supabase POST ${table} ${res.status}: ${err}`);
   }
-  return res.json();
+  const text = await res.text();
+  if (!text) return [];
+  return JSON.parse(text);
 }
 
 async function supabaseGet(path) {
