@@ -45,8 +45,12 @@ export default function Hotspot({ hotspot, index, onSelect, isMobile }: HotspotP
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, delay: 2.5 + index * 0.25, ease: 'easeOut' }}
     >
+      {/* Pulse rings */}
+      <div className="absolute inset-0 -m-3 rounded-full bg-amber-400/30 hotspot-ring" />
+      <div className="absolute inset-0 -m-1.5 rounded-full bg-amber-400/20 hotspot-ring" style={{ animationDelay: '0.5s' }} />
+
       {/* Dot — larger touch target on mobile, tap to explore */}
-      <div className={`relative rounded-full bg-amber-400 hotspot-dot flex items-center justify-center cursor-pointer ${isMobile ? 'w-8 h-8' : 'w-5 h-5'}`}
+      <div className={`absolute inset-0 m-auto rounded-full bg-amber-400 hotspot-dot flex items-center justify-center cursor-pointer ${isMobile ? 'w-8 h-8' : 'w-5 h-5'}`}
         onClick={handleClick}>
         <div className={`rounded-full bg-white ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
       </div>
