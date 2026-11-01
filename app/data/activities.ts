@@ -60,7 +60,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1513836279014-a89f7dorz1523?w=1600&q=80',
       'https://images.unsplash.com/photo-1485372526160-2a3d303847b8?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/Si6u7aIL2lI'],
+    videoUrls: ['https://www.youtube.com/embed/KlvJ6Fw5G8E'],
     rating: 4.8,
     reviews: [
       { author: "Sarah M.", date: "2024-06-15", rating: 5, text: "We've been coming for 10 years and it just keeps getting better. The Outlaw coaster is absolutely incredible and the craftsman demonstrations are educational for the kids." },
@@ -101,7 +101,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1501785888091-af3f5c4b1f3b?w=1600&q=80',
       'https://images.unsplash.com/photo-1439405326859-07c607514dfd?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/9VJcJpXbBhU'],
+    videoUrls: ['https://www.youtube.com/embed/-hc7P_NFbUQ'],
     rating: 4.7,
     reviews: [
       { author: "Mike P.", date: "2024-07-20", rating: 5, text: "Rented a cabin with a private dock for a week — it was paradise. The water visibility is incredible, especially in the summer months." },
@@ -141,7 +141,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1534958020007-999633628765?w=1600&q=80',
       'https://images.unsplash.com/photo-1551972251-12070d8d5798?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/aqCJhYXbKMg'],
+    videoUrls: ['https://www.youtube.com/embed/T5kDHUBMvKQ'],
     rating: 4.6,
     reviews: [
       { author: "Jennifer B.", date: "2024-09-01", rating: 5, text: "The scale of this building is breathtaking. You really feel like you're on the ship. The artifact collection is one of the most comprehensive in the world." },
@@ -182,7 +182,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1489749798305-0adb5f96b8b4?w=1600&q=80',
       'https://images.unsplash.com/photo-1470252649378-9c29740e9eef?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/h4JkVWv0c4o'],
+    videoUrls: ['https://www.youtube.com/embed/Nqoj5d26LS8'],
     rating: 4.5,
     reviews: [
       { author: "Nancy D.", date: "2024-08-05", rating: 5, text: "Brought the whole family and camped nearby. The outdoor show against the mountain backdrop is one of the most moving experiences we've ever had." },
@@ -222,7 +222,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1504674903840-56a79d47d1e1?w=1600&q=80',
       'https://images.unsplash.com/photo-1560937969-b509889f6a65?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/WsQv7K1dK1s'],
+    videoUrls: ['https://www.youtube.com/embed/XqemEPCgHiE'],
     rating: 4.7,
     reviews: [
       { author: "Patricia G.", date: "2024-06-22", rating: 5, text: "The food quality shocked us — legitimately great roast beef and cornbread. Don't skip the biscuits! The horse show is world-class." },
@@ -262,7 +262,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1477959858617-6c296cd61985?w=1600&q=80',
       'https://images.unsplash.com/photo-1533234956483-156c052697b0?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/Xc0E5E3VxkI'],
+    videoUrls: ['https://www.youtube.com/embed/t_jDcxgq6F8'],
     rating: 4.5,
     reviews: [
       { author: "Brian A.", date: "2024-10-01", rating: 5, text: "The Christmas Festival is magical. The entire waterfront is decorated and there are ice skating, carolers, and live music everywhere." },
@@ -302,7 +302,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1439405326859-07c607514dfd?w=1600&q=80',
       'https://images.unsplash.com/photo-1472166019855-c8840ba4ce41?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/RLx5v1r3j7Q'],
+    videoUrls: ['https://www.youtube.com/embed/OJXJ3yH_DfI'],
     rating: 4.8,
     reviews: [
       { author: "Diana W.", date: "2024-04-25", rating: 5, text: "This place is heaven. We kayaked at sunrise and it was silent except for the occasional loon call. Most beautiful sunrise of our lives." },
@@ -341,7 +341,7 @@ export const activities: Activity[] = [
       'https://images.unsplash.com/photo-1545558014-17dd14b95e8b?w=1600&q=80',
       'https://images.unsplash.com/photo-1514525653458-f1f49efb1999?w=1600&q=80',
     ],
-    videoUrls: ['https://www.youtube.com/embed/5xP8Eg0cJfU'],
+    videoUrls: [],
     rating: 4.3,
     reviews: [
       { author: "Mark J.", date: "2024-06-30", rating: 4, text: "Fun family experience! The Captain Hook show had the whole family laughing. Food was decent buffet-quality and the lake views were gorgeous." },
