@@ -46,7 +46,8 @@ export default function HomePage() {
       <CreativeNav />
 
       {/* ── Hotspot Layer ── */}
-      <div className="absolute inset-0 z-10">
+      {/* suppressHydrationWarning: isMobile value differs between SSR (false) and client (true on mobile) */}
+      <div className="absolute inset-0 z-10" suppressHydrationWarning>
         {hotspots.map((h, i) => (
           <Hotspot
             key={h.id}
