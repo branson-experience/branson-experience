@@ -149,8 +149,8 @@ export default function HomePage() {
                 {!isMobile ? 'Tap any hotspot above •' : 'Tap any point above •'} or explore them all below
               </p>
 
-              {/* Mini activity grid — horizontal scroll on mobile, grid on desktop */}
-              <div className="flex flex-nowrap gap-3 overflow-x-auto pb-4 px-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:place-items-center scrollbar-hide">
+              {/* Mini activity grid — horizontal scroll on mobile, wrapped grid on desktop */}
+              <div className="flex gap-3 overflow-x-auto pb-4 px-2 sm:overflow-x-visible sm:flex-wrap sm:justify-center sm:gap-4 scrollbar-hide">
                 {hotspots.map((h, i) => (
                   <motion.a
                     key={h.id}
