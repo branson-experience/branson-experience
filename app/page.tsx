@@ -11,7 +11,6 @@ type HotspotData = ReturnType<typeof getActivityHotspots>[number];
 
 export default function HomePage() {
   const [hotspots] = useState<HotspotData[]>(() => getActivityHotspots());
-  const [selected, setSelected] = useState<HotspotData | null>(null);
   const [showExplore, setShowExplore] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -23,19 +22,11 @@ export default function HomePage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Delay explore button appearance for cinematic feel
+  // Delay explore grid appearance for cinematic feel
   useEffect(() => {
     const t = setTimeout(() => setShowExplore(true), 3500);
     return () => clearTimeout(t);
   }, []);
-
-  // Keyboard navigation
-  const handleExplore = () => {
-    if (selected) {
-      window.location.href = `/activities/${selected.slug}`;
-    }
-    setSelected(null);
-  };
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -45,7 +36,7 @@ export default function HomePage() {
       {/* ── Creative Navigation ── */}
       <CreativeNav />
 
-      {/* ── Hotspot Layer ── */}
+      {/* ── Hotspot Layer (tap → direct navigation via <a> tag) ── */}
       {/* suppressHydrationWarning: isMobile value differs between SSR (false) and client (true on mobile) */}
       <div className="absolute inset-0 z-10" suppressHydrationWarning>
         {hotspots.map((h, i) => (
@@ -53,83 +44,10 @@ export default function HomePage() {
             key={h.id}
             hotspot={{ ...h, slug: h.slug }}
             index={i}
-            onSelect={setSelected}
             isMobile={isMobile}
           />
         ))}
       </div>
-
-      {/* ── Selected Detail Modal ── */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            className="absolute inset-0 z-30 flex items-center justify-center p-3 sm:p-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelected(null)}
-          >
-            <motion.div
-              className={`w-full ${isMobile ? 'max-w-[95vw]' : 'max-w-lg'} mx-auto`}
-              initial={{ opacity: 0, y: 30, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl glow-card">
-                {/* Image with overlay */}
-                <div className="relative h-48 sm:h-56">
-                  <img
-                    src={selected.image}
-                    alt={selected.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d] via-[#0a0f0d]/40 to-transparent" />
-
-                  {/* Category badge */}
-                  <div
-                    className={`absolute bottom-3 sm:bottom-4 left-3 sm:left-4 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white ${categoryBadge[selected.category] ?? 'badge-adventure'}`}
-                  >
-                    {selected.category}
-                  </div>
-
-                  {/* Close button — bigger on mobile for touch */}
-                  <button
-                    className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition-colors cursor-pointer"
-                    onClick={() => setSelected(null)}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Detail content */}
-                <div className="p-4 sm:p-6 bg-[#1a1f1c]/95 backdrop-blur-md rounded-b-2xl">
-                  <h2 className="text-lg sm:text-2xl font-playfair font-bold text-white mb-2">
-                    {selected.title}
-                  </h2>
-                  <p className="text-gray-300 font-outfit text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4">
-                    {selected.description}
-                  </p>
-
-                  {/* Explore → fly button */}
-                  <motion.button
-                    className="group bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/30 px-4 py-3 rounded-lg text-sm font-outfit font-medium transition-all w-full cursor-pointer flex items-center justify-center gap-2"
-                    onClick={handleExplore}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <span>Explore This Experience</span>
-                    <span className="group-hover:translate-x-1 transition-transform">
-                      ↑
-                    </span>
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ── Scroll to Explore Grid ── */}
       <AnimatePresence>
@@ -146,7 +64,7 @@ export default function HomePage() {
             {/* Explore all CTA */}
             <div className="relative pb-4 sm:pb-6 px-2 sm:px-6">
               <p className="text-center text-white/40 text-[10px] sm:text-xs font-outfit tracking-widest uppercase mb-2 sm:mb-4">
-                {!isMobile ? 'Tap any hotspot above •' : 'Tap any point above •'} or explore them all below
+                {isMobile ? 'Tap any point above •' : 'Hover any hotspot above •'} or explore them all below
               </p>
 
               {/* Mini activity grid — horizontal scroll on mobile, wrapped grid on desktop */}
