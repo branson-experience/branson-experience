@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HotspotProps {
@@ -31,18 +31,20 @@ const badgeClasses: Record<string, string> = {
 };
 
 export default function Hotspot({ hotspot, index, onSelect, isMobile }: HotspotProps) {
-  // Desktop only: hover opens preview card
+  const [mounted, setMounted] = useState(false);
   const [active, setActive] = useState(false);
   const badgeClass = badgeClasses[hotspot.category] || 'badge-adventure';
 
-  // On mobile: tap navigates directly. On desktop: click opens card.
+  useEffect(() => setMounted(true), []);
+
+  // On mobile: tap navigates directly. On desktop: click toggles card.
   const handleClick = useCallback(() => {
     if (isMobile) {
       onSelect(hotspot);
-    } else {
+    } else if (mounted) {
       setActive(a => !a);
     }
-  }, [isMobile, hotspot, onSelect]);
+  }, [isMobile, hotspot, onSelect, mounted]);
 
   const handleExplore = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,7 +92,7 @@ export default function Hotspot({ hotspot, index, onSelect, isMobile }: HotspotP
       </motion.div>
 
       {/* Desktop hover card — not shown on mobile (mobile taps navigate directly) */}
-      {!isMobile && (
+      {!isMobile && mounted && (
         <AnimatePresence>
           {active && (
             <motion.div
