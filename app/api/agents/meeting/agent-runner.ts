@@ -211,6 +211,12 @@ class SubAgent {
 
     const knownFake = KNOWN_FAKE.join(', ');
 
+    // Build a filtered list of known attractions relevant to this category
+    const categoryAttractions = Object.entries(KNOWN_ATTRACTIONS)
+      .filter(([, v]) => v.category === this.category)
+      .map(([k, v]) => `- "${k}" (${v.website})`)
+      .join('\n') || '(none in this category)';
+
     return `You are the ${this.category} sub-agent for Branson Experience content management.
 
 ${this.seasonPrompt()}
@@ -232,6 +238,11 @@ ${activityList || '(no active activities in this category)'}
 
 Current active pool: ${ROTATION_POLICY.totalActive} total across all categories
 Activities to rotate this cycle: ${ROTATION_POLICY.rotationCount}
+
+=== APPROVED CANDIDATE LIST ===
+When proposing new activities, propose ONLY from this approved list:
+${categoryAttractions}
+If none of these are suitable, do NOT propose new activities for this category.
 
 Respond with ONLY a JSON object matching this schema:
 {
@@ -299,6 +310,10 @@ class MasterAgent {
       .map(r => `### ${r.category}-agent\n${(r.reviewed ?? []).map(v => `- ${v.name}: score=${v.combined_score ?? v.score} → ${v.action}`).join('\n')}`)
       .join('\n\n');
 
+    const knownAttractionsList = Object.entries(KNOWN_ATTRACTIONS)
+      .map(([k, v]) => `- "${k}" (${v.category}): ${v.website}`)
+      .join('\n');
+
     return `Daily AI Agent Meeting — Branson Experience Content Management
 
 ${getCurrentSeason() ? `Season: ${SEASONS[season].label}` : ''}
@@ -324,6 +339,10 @@ Every new activity MUST include complete contact details:
 - Website: real, working URL
 - Category: one of ${CATEGORIES.join(', ')}
 If you cannot provide ALL of these, do NOT propose the activity.
+
+=== APPROVED CANDIDATE LIST ===
+Only approve proposals for activities on this list. Anything else must be denied:
+${knownAttractionsList}
 
 === Master Agent Decision Request ===
 

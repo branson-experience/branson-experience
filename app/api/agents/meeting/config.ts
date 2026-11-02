@@ -77,13 +77,14 @@ export const KNOWN_FAKE: string[] = [
 
 /** Known-good Branson attractions — used to enrich LLM proposals missing details.
  *  When the LLM proposes an activity name but omits phone/address/website,
- *  this lookup fills them in so validation passes. */
+ *  this lookup fills them in so validation passes.
+ *  Last validated: 2026-11-02 — 20 verified attractions. */
 export const KNOWN_ATTRACTIONS: Record<string, { phone: string; address: string; website: string; category: string }> = {
   'the haygoods': {
-    phone: '(417) 534-6600',
-    address: '103 W State Rte 76, Branson, MO 65616',
-    website: 'https://www.thehaygoods.com',
-    category: 'outdoor',
+    phone: '(417) 339-4663',
+    address: '3216 76 Country Blvd, Branson, MO 65616',
+    website: 'https://thehaygoods.com',
+    category: 'shows',
   },
   'dogwood canyon nature park': {
     phone: '(417) 848-1963',
@@ -91,35 +92,113 @@ export const KNOWN_ATTRACTIONS: Record<string, { phone: string; address: string;
     website: 'https://www.dogwoodcanyon.org',
     category: 'outdoor',
   },
-  'tanzyike museum': {
-    phone: '(417) 334-7700',
-    address: '1239 W Highway 76 S, Branson, MO 65616',
-    website: 'https://www.tanzyike.com',
-    category: 'museums',
-  },
-  'tribble mills': {
-    phone: '(417) 334-7233',
-    address: '3284 N Highway 76 S, Branson, MO 65616',
-    website: 'https://www.tribblemills.com',
-    category: 'museums',
-  },
-  'branson balance rock': {
-    phone: '(417) 335-1265',
-    address: '18988 State Hwy 165, Branson, MO 65616',
-    website: 'https://www.balancerock.info',
-    category: 'outdoor',
-  },
-  'mimosa farm': {
-    phone: '(417) 334-0571',
-    address: '22485 US Highway 65 S, Branson, MO 65616',
-    website: 'https://www.mimosafarm.com',
-    category: 'outdoor',
-  },
   'branson zipline at wolfe creek': {
     phone: '(417) 335-9100',
-    address: '15757 S State Hwy 248, Willow Springs, MO 65793 (Branson area)',
+    address: '15757 S State Hwy 248, Branson, MO 65616 (Branson area)',
     website: 'https://www.wolfemountainbranson.com',
     category: 'outdoor',
+  },
+  'branson scenic railway': {
+    phone: '(800) 287-2462',
+    address: '206 E Main St, Branson, MO 65616',
+    website: 'https://bransontrain.com',
+    category: 'outdoor',
+  },
+  'hollywood wax museum': {
+    phone: '(417) 337-8700',
+    address: '3030 W 76 Country Blvd Unit A, Branson, MO 65616',
+    website: 'https://hollywoodwax.com',
+    category: 'museums',
+  },
+  'celebrity car museum': {
+    phone: '(417) 239-1644',
+    address: '1600 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://celebritycarmuseum.com',
+    category: 'museums',
+  },
+  'branson duck tours': {
+    phone: '(417) 598-9099',
+    address: '3430 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://bransonducktours.com',
+    category: 'water',
+  },
+  'promised land zoo': {
+    phone: '(417) 337-9453',
+    address: '2751 Shepherd of the Hills Expy, Branson, MO 65616',
+    website: 'https://www.plzoo.com',
+    category: 'outdoor',
+  },
+  'branson dinosaur museum': {
+    phone: '(417) 239-0733',
+    address: '3619 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://bransondinosaurmuseum.com',
+    category: 'museums',
+  },
+  'wonderworks branson': {
+    phone: '(417) 231-9999',
+    address: '2835 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://www.wonderworksonline.com/branson',
+    category: 'themes',
+  },
+  'butterfly palace': {
+    phone: '(417) 332-2231',
+    address: '4106 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://thebutterflypalace.com',
+    category: 'outdoor',
+  },
+  'legends in concert': {
+    phone: '(417) 339-3003',
+    address: '1600 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://legendsinconcert.com',
+    category: 'shows',
+  },
+  'splash country': {
+    phone: '(888) 505-4094',
+    address: 'Grand Country Residences, Grand Country Dr, Branson, MO 65616',
+    website: 'https://www.grandcountry.com/waterpark',
+    category: 'water',
+  },
+  'white water': {
+    phone: '(417) 335-2707',
+    address: '3505 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://www.whitewaterbranson.com',
+    category: 'water',
+  },
+  'copperhead mountain coaster': {
+    phone: '(417) 334-4191',
+    address: '6021 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://theshepherdofthehills.com/coaster/',
+    category: 'outdoor',
+  },
+  'fritz adventure': {
+    phone: '(417) 320-6138',
+    address: '1425 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://www.fritzsadventure.com',
+    category: 'themes',
+  },
+  'showboat branson belle': {
+    phone: '(417) 336-7100',
+    address: '4800 State Hwy 165, Branson, MO 65616',
+    website: 'https://www.showboatbransonbelle.com',
+    category: 'shows',
+  },
+  'whodunnit hoedown': {
+    phone: '(417) 334-4191',
+    address: '5587 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://bransonwhodunnitmurdermystery.com',
+    category: 'shows',
+  },
+  'hughes brothers theatre': {
+    phone: '(417) 334-0076',
+    address: '3425 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://hughesentertainmentinc.com',
+    category: 'shows',
+  },
+  'presleys country jubilee': {
+    phone: '(417) 334-4874',
+    address: '2920 W 76 Country Blvd, Branson, MO 65616',
+    website: 'https://www.presleys.com',
+    category: 'shows',
   },
 };
 
