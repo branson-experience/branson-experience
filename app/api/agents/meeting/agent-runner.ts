@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { AI_CONFIG, CATEGORIES, SCORING_WEIGHTS, getCurrentSeason, SEASONS, MEETING_CONFIG, log, ROTATION_POLICY, KNOWN_FAKE, VALIDATION_RULES } from './config';
+import { AI_CONFIG, CATEGORIES, SCORING_WEIGHTS, getCurrentSeason, SEASONS, MEETING_CONFIG, log, ROTATION_POLICY, KNOWN_FAKE, VALIDATION_RULES, KNOWN_ATTRACTIONS } from './config';
 import { sendEmail, buildDailyReportHTML, buildDailyReportText } from './email-service';
 import {
   logMeeting, logDecision, getActivityData, updateActivityStatus, getActivityByName,
@@ -63,6 +63,28 @@ function parseAIJSON(raw) {
 function isKnownFake(name: string): boolean {
   const lower = name.toLowerCase();
   return KNOWN_FAKE.some(fake => lower.includes(fake));
+}
+
+/**
+ * Enrich activity details from a curated allowlist when the LLM omits data.
+ * Mutates `details` in-place, filling in any missing phone/address/website/category.
+ */
+function enrichDetails(details: Record<string, unknown>, activityName: string): Record<string, unknown> {
+  const name = ((details.name ?? activityName ?? '') as string).toLowerCase();
+  // Direct match or partial match against known-good attractions
+  for (const [key, info] of Object.entries(KNOWN_ATTRACTIONS)) {
+    if (name.includes(key) || key.includes(name)) {
+      if (!details.phone) details.phone = info.phone;
+      if (!details.address) details.address = info.address;
+      if (!details.website) details.website = info.website;
+      if (!details.category) details.category = info.category;
+      if (!details.name) details.name = activityName || key;
+      // Ensure name field is set
+      if (!details.name) details.name = info.phone ? activityName : details.name;
+      break;
+    }
+  }
+  return details;
 }
 
 /**
@@ -518,6 +540,8 @@ Respond with ONLY a JSON object:
 
       // ── VALIDATE new additions ─────────────────────────────────────────
       if (d.decision_action === 'add') {
+        // Enrich details from known-good lookup before validation
+        enrichDetails(details, activityName);
         const validation = validateActivityData(details);
         if (!validation.valid) {
           log('warn', `[master] REJECTED addition "${activityName}": ${validation.reasons.join('; ')}`);

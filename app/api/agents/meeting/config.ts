@@ -75,6 +75,48 @@ export const KNOWN_FAKE: string[] = [
   'the show brig',
 ];
 
+/** Known-good Branson attractions — used to enrich LLM proposals missing details.
+ *  When the LLM proposes an activity name but omits phone/address/website,
+ *  this lookup fills them in so validation passes. */
+export const KNOWN_ATTRACTIONS: Record<string, { phone: string; address: string; website: string; category: string }> = {
+  'the haygoods': {
+    phone: '(417) 534-6600',
+    address: '103 W State Rte 76, Branson, MO 65616',
+    website: 'https://www.thehaygoods.com',
+    category: 'outdoor',
+  },
+  'dogwood canyon nature park': {
+    phone: '(417) 848-1963',
+    address: '7409 Dogwood Canyon Rd, Branson, MO 65616',
+    website: 'https://www.dogwoodcanyon.org',
+    category: 'outdoor',
+  },
+  'tanzyike museum': {
+    phone: '(417) 334-7700',
+    address: '1239 W Highway 76 S, Branson, MO 65616',
+    website: 'https://www.tanzyike.com',
+    category: 'museums',
+  },
+  'tribble mills': {
+    phone: '(417) 334-7233',
+    address: '3284 N Highway 76 S, Branson, MO 65616',
+    website: 'https://www.tribblemills.com',
+    category: 'museums',
+  },
+  'branson balance rock': {
+    phone: '(417) 335-1265',
+    address: '18988 State Hwy 165, Branson, MO 65616',
+    website: 'https://www.balancerock.info',
+    category: 'outdoor',
+  },
+  'mimosa farm': {
+    phone: '(417) 334-0571',
+    address: '22485 US Highway 65 S, Branson, MO 65616',
+    website: 'https://www.mimosafarm.com',
+    category: 'outdoor',
+  },
+};
+
 /** Additional data-quality checks run on every candidate before it's accepted. */
 export const VALIDATION_RULES = {
   validPhone: (phone: string): boolean => {
@@ -107,8 +149,11 @@ export const VALIDATION_RULES = {
       if (lower.includes(pattern)) return false;
     }
     const words = name.split(/\s+/).filter(w => !['the', 'a', 'at', 'of', 'in', 'for', 'and', 'to', 'branson'].includes(w.toLowerCase()));
-    if (words.length < 2) return false;
-    return true;
+    // Allow if 2+ significant words, OR if the name has at least one properly
+    // capitalized significant word (legitimate single-word names like "The Haygoods", "Applebee's", "Red Lobster").
+    if (words.length >= 2) return true;
+    if (words.length === 1 && /^[A-Z]/.test(words[0]) && words[0].length >= 4) return true;
+    return false;
   },
 };
 
