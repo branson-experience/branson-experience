@@ -234,10 +234,10 @@ export const VALIDATION_RULES = {
       if (lower.includes(pattern)) return false;
     }
     const words = name.split(/\s+/).filter(w => !['the', 'a', 'at', 'of', 'in', 'for', 'and', 'to', 'branson'].includes(w.toLowerCase()));
-    // Allow if 2+ significant words, OR if the name has at least one properly
-    // capitalized significant word (legitimate single-word names like "The Haygoods", "Applebee's", "Red Lobster").
+    // Allow if 2+ significant words, OR if a single significant word is >=4 chars.
+    // (The LLM may send any case — "the haygoods" becomes "haygoods".)
     if (words.length >= 2) return true;
-    if (words.length === 1 && /^[A-Z]/.test(words[0]) && words[0].length >= 4) return true;
+    if (words.length === 1 && words[0].length >= 4) return true;
     return false;
   },
 };

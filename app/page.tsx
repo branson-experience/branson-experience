@@ -9,10 +9,49 @@ import { getActivityHotspots, categoryBadge } from './data/activities';
 
 type HotspotData = ReturnType<typeof getActivityHotspots>[number];
 
+type StaticHotspotData = ReturnType<typeof getActivityHotspots>[number];
+
+/** Shape for API-fetched data. */
+interface ApiActivityHotspot {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  description: string;
+  image: string;
+  rating: number;
+  hotspotX: number;
+  hotspotY: number;
+  score?: number;
+}
+
 export default function HomePage() {
-  const [hotspots] = useState<HotspotData[]>(() => getActivityHotspots());
+  // Always hold StaticHotspotData shape — Hotspot component requires x/y
+  const [hotspots, setHotspots] = useState<StaticHotspotData[]>(getActivityHotspots);
   const [showExplore, setShowExplore] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Fetch live activities from the database
+  useEffect(() => {
+    fetch('/api/activities')
+      .then(r => r.json())
+      .then((data: ApiActivityHotspot[]) => {
+        if (Array.isArray(data) && data.length) {
+          // Normalize API data to match the Hotspot component's expected shape
+          setHotspots(data.map(h => ({
+            id: h.id,
+            slug: h.slug,
+            x: h.hotspotX,
+            y: h.hotspotY,
+            title: h.title,
+            category: h.category,
+            description: h.description,
+            image: h.image,
+          } as StaticHotspotData)));
+        }
+      })
+      .catch(() => { /* keep static fallback */ });
+  }, []);
 
   // Detect mobile on client only — useEffect prevents hydration mismatch
   useEffect(() => {
