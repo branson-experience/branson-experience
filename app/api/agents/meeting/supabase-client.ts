@@ -22,51 +22,53 @@ function headers(kind = 'service') {
   return h;
 }
 
-async function supabasePost(table, body) {
-  const h = headers('service');
-  h['Prefer'] = 'return=representation';
-  const res = await fetch(`${BASE}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: h,
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => res.statusText);
-    throw new Error(`Supabase POST ${table} ${res.status}: ${err}`);
-  }
+/** Parse a Supabase JSON response safely — handles empty bodies. */
+async function safeJSON(res: Response): Promise<unknown[]> {
   const text = await res.text();
-  if (!text) return [];
+  if (!text) {
+    return [];
+  }
   return JSON.parse(text);
 }
 
-async function supabaseGet(path) {
-  const res = await fetch(`${BASE}/rest/v1${path}`, {
-    headers: headers('service'),
-  });
+/** Send a Supabase request and throw on non-OK. */
+async function supabaseRequest(method: string, url: string, headersExtra: Record<string, string> = {}, body?: unknown) {
+  const h = headers('service');
+  for (const [k, v] of Object.entries(headersExtra)) {
+    h[k] = v;
+  }
+  const init: RequestInit = { method, headers: h };
+  if (body !== undefined) {
+    init.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, init);
   if (!res.ok) {
     const err = await res.text().catch(() => res.statusText);
-    throw new Error(`Supabase GET ${path} ${res.status}: ${err}`);
+    throw new Error(`Supabase ${method} ${url} ${res.status}: ${err}`);
   }
-  return res.json();
+  return safeJSON(res);
 }
 
-async function supabasePatch(table, id, body) {
-  const res = await fetch(`${BASE}/rest/v1/${table}?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: headers('service'),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => res.statusText);
-    throw new Error(`Supabase PATCH ${table}/${id} ${res.status}: ${err}`);
-  }
-  return res.json();
+async function supabasePost(table: string, body: unknown) {
+  return supabaseRequest('POST', `${BASE}/rest/v1/${table}`, {
+    'Prefer': 'return=representation',
+  }, body);
+}
+
+async function supabaseGet(path: string) {
+  return supabaseRequest('GET', `${BASE}/rest/v1${path}`);
+}
+
+async function supabasePatch(table: string, id: string, body: unknown) {
+  return supabaseRequest('PATCH', `${BASE}/rest/v1/${table}?id=eq.${id}`, {
+    'Prefer': 'return=representation',
+  }, body);
 }
 
 // ── Meeting Operations ───────────────────────────────────────────────────────
 
 /** Log a new meeting and return its id. */
-export async function logMeeting(summary, agentNotes, decisionsRaw) {
+export async function logMeeting(summary: unknown, agentNotes: unknown, decisionsRaw: unknown) {
   const result = await supabasePost('meetings', {
     summary,
     agent_notes: agentNotes,
@@ -76,7 +78,7 @@ export async function logMeeting(summary, agentNotes, decisionsRaw) {
 }
 
 /** Attach a decision to a meeting. */
-export async function logDecision(meetingId, activityId, action, reason) {
+export async function logDecision(meetingId: string, activityId: string, action: string, reason: string) {
   const result = await supabasePost('decisions', {
     meeting_id: meetingId,
     activity_id: activityId,
@@ -89,7 +91,7 @@ export async function logDecision(meetingId, activityId, action, reason) {
 // ── Activity Operations ──────────────────────────────────────────────────────
 
 /** Get all activities, optionally filtered by category or status. */
-export async function getActivityData(category, status) {
+export async function getActivityData(category: string | null, status: string | null) {
   let path = '/activities?select=*';
   if (category) path += `&category=eq.${category}`;
   if (status)   path += `&status=eq.${status}`;
@@ -97,18 +99,23 @@ export async function getActivityData(category, status) {
 }
 
 /** Update an activity's status or score. */
-export async function updateActivityStatus(activityId, updates) {
+export async function updateActivityStatus(activityId: string, updates: Record<string, unknown>) {
   return supabasePatch('activities', activityId, updates);
 }
 
 /** Lookup activity UUID by name. */
-export async function getActivityByName(name) {
+export async function getActivityByName(name: string) {
   const results = await supabaseGet(`/activities?name=eq.${encodeURIComponent(name)}&select=id`);
   return results?.[0]?.id || null;
 }
 
+/** Delete an activity by UUID (hard remove). */
+export async function deleteActivity(activityId: string) {
+  return supabaseRequest('DELETE', `${BASE}/rest/v1/activities?id=eq.${activityId}`);
+}
+
 /** Log a content update audit trail. */
-export async function logContentUpdate(activityId, updateType, oldValue, newValue) {
+export async function logContentUpdate(activityId: string, updateType: string, oldValue: unknown, newValue: unknown) {
   return supabasePost('content_updates', {
     activity_id: activityId,
     update_type: updateType,
@@ -120,7 +127,7 @@ export async function logContentUpdate(activityId, updateType, oldValue, newValu
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 /** Get recent decisions for an activity (audit trail). */
-export async function getDecisionHistory(activityId, limit = 20) {
+export async function getDecisionHistory(activityId: string, limit = 20) {
   return supabaseGet(`/decisions?activity_id=eq.${activityId}&order=timestamp.desc&limit=${limit}`);
 }
 
@@ -130,12 +137,12 @@ export async function getRecentMeetings(limit = 10) {
 }
 
 /** Get recent content updates for an activity. */
-export async function getContentUpdateHistory(activityId, limit = 20) {
+export async function getContentUpdateHistory(activityId: string, limit = 20) {
   return supabaseGet(`/content_updates?activity_id=eq.${activityId}&order=timestamp.desc&limit=${limit}`);
 }
 
 // ── Batch upsert activities (REST doesn't have upsert, so we insert + handle conflicts). ──
-export async function upsertActivity(name, category, metadata, score = 50, status = 'draft') {
+export async function upsertActivity(name: string, category: string, metadata: unknown, score = 50, status = 'draft') {
   try {
     // Check if it already exists
     const existing = await supabaseGet(`/activities?name=eq.${encodeURIComponent(name)}&category=eq.${category}`);

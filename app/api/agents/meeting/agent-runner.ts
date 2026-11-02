@@ -3,7 +3,7 @@ import { AI_CONFIG, CATEGORIES, SCORING_WEIGHTS, getCurrentSeason, SEASONS, MEET
 import { sendEmail, buildDailyReportHTML, buildDailyReportText } from './email-service';
 import {
   logMeeting, logDecision, getActivityData, updateActivityStatus, getActivityByName,
-  logContentUpdate, getRecentMeetings, upsertActivity,
+  logContentUpdate, getRecentMeetings, upsertActivity, deleteActivity,
 } from './supabase-client';
 
 // ── LLM Call Helper ───────────────────────────────────────────────────────────
@@ -367,6 +367,23 @@ Respond with ONLY a JSON object:
     const meetingDate = new Date();
     log('info', `=== Daily meeting started: ${meetingDate.toISOString()} ===`);
 
+    // ── Phase 0: Purge known-fake activities ────────────────────────────────
+    // Hard-delete any known-fake attractions from the DB to prevent them from
+    // being rescored, rotated, or used in any way.
+    const fakePurged: string[] = [];
+    const allExisting = await getActivityData(null, null);
+    for (const a of allExisting) {
+      if (isKnownFake(a.name)) {
+        try {
+          await deleteActivity(a.id);
+          fakePurged.push(a.name);
+          log('warn', `[purge] Deleted known-fake: "${a.name}" (${a.id})`);
+        } catch (err) {
+          log('error', `[purge] Failed to delete "${a.name}":`, err);
+        }
+      }
+    }
+
     // ── Phase 1: Sub-agent reviews ──────────────────────────────────────────
     const subAgentResults: Array<Record<string, unknown>> = [];
 
@@ -502,6 +519,7 @@ Respond with ONLY a JSON object:
             const newId = newActivity?.[0]?.id;
             if (newId) {
               addedIds.push(newId);
+              nameToId[activityName.toLowerCase()] = newId; // update map in-place
               log('info', `[master] Added: ${activityName} (${newId})`);
               appliedChanges.push(`✅ Added "${activityName}"`);
               await logDecision(meetingId, newId, 'add', `New activity added: ${d.reason}`);
@@ -608,7 +626,8 @@ Respond with ONLY a JSON object:
 
     // ── Phase 7: Email report ─────────────────────────────────────────────
     const stats = [
-      { label: 'Categories reviewed', value: subAgentResults.length },
+      { label: 'Fake activities purged', value: fakePurged.length },
+      { label: 'Categories reviewed',   value: subAgentResults.length },
       { label: 'Decisions made',     value: decisionsForLog.length },
       { label: 'Changes applied',    value: appliedChanges.length },
       { label: 'Activities rotated', value: rotationChanges.length },
@@ -664,7 +683,7 @@ Respond with ONLY a JSON object:
       })),
     };
 
-    log('info', `=== Meeting complete: ${result.decisions} decisions, ${result.changes_applied} changes, ${result.rotation.rotated_out.length} rotated ===`);
+    log('info', `=== Meeting complete: ${result.decisions} decisions, ${result.changes_applied} changes, ${result.rotation.rotated_out.length} rotated, ${fakePurged.length} fake purged ===`);
     return result;
   }
 }
