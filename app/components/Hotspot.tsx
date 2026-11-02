@@ -27,7 +27,6 @@ const badgeClasses: Record<string, string> = {
 };
 
 export default function Hotspot({ hotspot, index, isMobile }: HotspotProps) {
-  const badgeClass = badgeClasses[hotspot.category] || 'badge-adventure';
   const href = `/activities/${hotspot.slug}`;
 
   return (
@@ -38,13 +37,19 @@ export default function Hotspot({ hotspot, index, isMobile }: HotspotProps) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, delay: 2.5 + index * 0.25, ease: 'easeOut' }}
     >
-      <a href={href} className="block absolute inset-0" title={`Explore ${hotspot.title}`} />
+      {/* Clickable area — expanded touch target */}
+      {/* pointer-events-auto: parent layer is pointer-events-none, re-enable here so dots stay tappable */}
+      <a
+        href={href}
+        className={`pointer-events-auto absolute ${isMobile ? '-left-6 -top-6 w-12 h-12' : '-left-5 -top-5 w-10 h-10'} rounded-full flex items-center justify-center`}
+        title={`Explore ${hotspot.title}`}
+      />
 
       {/* Pulse rings */}
       <div className="absolute inset-0 -m-3 rounded-full bg-amber-400/30 hotspot-ring pointer-events-none" />
       <div className="absolute inset-0 -m-1.5 rounded-full bg-amber-400/20 hotspot-ring pointer-events-none" style={{ animationDelay: '0.5s' }} />
 
-      {/* Dot — clickable */}
+      {/* Dot — visual only, click handled by <a> behind it */}
       <div className={`absolute inset-0 m-auto rounded-full bg-amber-400 hotspot-dot flex items-center justify-center pointer-events-none ${isMobile ? 'w-8 h-8' : 'w-5 h-5'}`}>
         <div className={`rounded-full bg-white ${isMobile ? 'w-3 h-3' : 'w-2 h-2'}`} />
       </div>

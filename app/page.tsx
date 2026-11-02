@@ -36,9 +36,11 @@ export default function HomePage() {
       {/* ── Creative Navigation ── */}
       <CreativeNav />
 
-      {/* ── Hotspot Layer (tap → direct navigation via <a> tag) ── */}
+      {/* ── Hotspot Layer (tap → direct navigation) ── */}
       {/* suppressHydrationWarning: isMobile value differs between SSR (false) and client (true on mobile) */}
-      <div className="absolute inset-0 z-10" suppressHydrationWarning>
+      {/* pointer-events-none so this full-screen layer doesn't block the z-20 explore cards;
+          each hotspot re-enables clicks with pointer-events-auto on its <a>. */}
+      <div className="absolute inset-0 z-30 pointer-events-none" suppressHydrationWarning>
         {hotspots.map((h, i) => (
           <Hotspot
             key={h.id}
@@ -62,35 +64,35 @@ export default function HomePage() {
             <div className="absolute -top-24 left-0 right-0 h-24 bg-gradient-to-t from-[#0a0f0d] to-transparent pointer-events-none" />
 
             {/* Explore all CTA */}
-            <div className="relative pb-4 sm:pb-6 px-2 sm:px-6">
-              <p className="text-center text-white/40 text-[10px] sm:text-xs font-outfit tracking-widest uppercase mb-2 sm:mb-4">
+            <div className="relative pb-2 sm:pb-4 px-2 sm:px-6">
+              <p className="text-center text-white/40 text-[10px] sm:text-xs font-outfit tracking-widest uppercase mb-1 sm:mb-2">
                 {isMobile ? 'Tap any point above •' : 'Hover any hotspot above •'} or explore them all below
               </p>
 
-              {/* Mini activity grid — horizontal scroll on mobile, wrapped grid on desktop */}
-              <div className="flex gap-3 overflow-x-auto pb-4 px-2 sm:overflow-x-visible sm:flex-wrap sm:justify-center sm:gap-4 scrollbar-hide">
+              {/* Mini activity grid — compact cards at bottom */}
+              <div className="flex gap-2 overflow-x-auto pb-2 px-1 sm:overflow-x-visible sm:flex-wrap sm:justify-center sm:gap-3 scrollbar-hide">
                 {hotspots.map((h, i) => (
                   <motion.a
                     key={h.id}
                     href={`/activities/${h.slug}`}
-                    className="flex-shrink-0 overflow-hidden rounded-xl relative w-[80vw] sm:w-56 md:w-64"
+                    className="flex-shrink-0 overflow-hidden rounded-lg relative w-[65vw] sm:w-40 md:w-48"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08, duration: 0.5 }}
+                    transition={{ delay: i * 0.06, duration: 0.4 }}
                   >
-                    <div className="relative h-48 sm:h-48">
+                    <div className="relative h-28 sm:h-32">
                       <img
                         src={h.image}
                         alt={h.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d]/95 via-[#0a0f0d]/30 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white ${categoryBadge[h.category] ?? 'badge-adventure'}`}>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d]/90 via-[#0a0f0d]/20 to-transparent" />
+                      <div className="absolute bottom-1.5 left-2 right-2">
+                        <span className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider text-white ${categoryBadge[h.category] ?? 'badge-adventure'}`}>
                           {h.category}
                         </span>
-                        <p className="text-white font-playfair font-bold mt-1 text-base sm:text-lg leading-tight">{h.title}</p>
+                        <p className="text-white font-playfair font-bold mt-0.5 text-sm sm:text-base leading-tight">{h.title}</p>
                       </div>
                     </div>
                   </motion.a>
