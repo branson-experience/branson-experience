@@ -69,7 +69,7 @@ function isKnownFake(name: string): boolean {
  * Validate activity data against our quality rules.
  * Returns { valid: true } or { valid: false, reasons: string[] }.
  */
-function validateActivityData(details: Record<string, unknown>) {
+function validateActivityData(details: Record<string, unknown>, isNew: boolean = true) {
   const reasons: string[] = [];
   const name = (details.name ?? details.title ?? '').toString();
   const phone = (details.phone ?? '').toString();
@@ -82,28 +82,44 @@ function validateActivityData(details: Record<string, unknown>) {
     reasons.push(`KNOWN FAKE: "${name}" is a known hallucination — never add`);
   }
 
-  // Phone: must be Missouri (417/817) or toll-free
-  if (phone && !VALIDATION_RULES.validPhone(phone)) {
-    const hasCode = phone.replace(/[\s\-\(\)]/g, '').match(/^(?:\+?1\s?)?\d{3}/);
-    const code = hasCode ? hasCode[0].replace(/\D/g, '') : 'N/A';
-    if (!['417', '817', '800', '888', '877', '866', '855', '844'].includes(code)) {
-      reasons.push(`INVALID PHONE area code "${code}" — must be 417/817 (MO) or toll-free`);
+  // Name must be a real attraction name (not generic)
+  if (!VALIDATION_RULES.validName(name)) {
+    reasons.push(`INVALID NAME: "${name}" — must be a real, specific attraction name`);
+  }
+
+  // NEW activities must have ALL contact details
+  if (isNew) {
+    if (!phone) {
+      reasons.push('MISSING PHONE — required for new activities');
+    } else if (!VALIDATION_RULES.validPhone(phone)) {
+      reasons.push(`INVALID PHONE: must be 417/817 (MO) or toll-free`);
+    }
+    if (!address) {
+      reasons.push('MISSING ADDRESS — required for new activities');
+    } else if (!VALIDATION_RULES.validAddress(address)) {
+      reasons.push(`INVALID ADDRESS: must reference Branson, MO`);
+    }
+    if (!website) {
+      reasons.push('MISSING WEBSITE — required for new activities');
+    } else if (!VALIDATION_RULES.validWebsite(website)) {
+      reasons.push(`INVALID WEBSITE: must be a real URL`);
+    }
+  } else {
+    // Updates: only validate if provided
+    if (phone && !VALIDATION_RULES.validPhone(phone)) {
+      reasons.push(`INVALID PHONE`);
+    }
+    if (address && !VALIDATION_RULES.validAddress(address)) {
+      reasons.push(`INVALID ADDRESS`);
+    }
+    if (website && !VALIDATION_RULES.validWebsite(website)) {
+      reasons.push(`INVALID WEBSITE`);
     }
   }
 
-  // Address must reference Branson, MO
-  if (address && !VALIDATION_RULES.validAddress(address)) {
-    reasons.push(`INVALID ADDRESS: "${address}" — must reference Branson, MO`);
-  }
-
-  // Website must be a valid URL
-  if (website && !VALIDATION_RULES.validWebsite(website)) {
-    reasons.push(`INVALID WEBSITE: "${website}" — must be a valid URL`);
-  }
-
-  // Category must be in our allowed list
+  // Category must be in allowed list
   if (category && !VALIDATION_RULES.validCategory(category)) {
-    reasons.push(`INVALID CATEGORY: "${category}" — must be one of ${CATEGORIES.join(', ')}`);
+    reasons.push(`INVALID CATEGORY: must be one of ${CATEGORIES.join(', ')}`);
   }
 
   return reasons.length === 0
@@ -182,7 +198,12 @@ Actions: keep, promote, demote, update, remove
 You may also propose NEW activities to add to this category.
 
 CRITICAL: Never suggest these known-fake attractions (AI hallucinations): ${knownFake}
-Every new activity suggestion must be a real, verifiable attraction in Branson, MO.
+Every new activity MUST include COMPLETE verified details:
+- Real name (not "New Show", "Outdoor Activity", etc.)
+- Phone: 417/817 (MO) or toll-free
+- Address: Branson, MO
+- Website: real working URL
+If you don't have ALL of these, do NOT propose the activity.
 
 Activities under review:
 ${activityList || '(no active activities in this category)'}
@@ -274,11 +295,13 @@ ${proposalsSection || 'No proposals submitted.'}
 
 === ANTI-HALLUCINATION ===
 Known-fake attractions that must NEVER be added: ${KNOWN_FAKE.join(', ')}
-Every new activity must pass data validation:
-- Phone: Missouri area codes (417/817) or toll-free
+Every new activity MUST include complete contact details:
+- Full name (not "New Show", "Another Activity", etc.)
+- Phone: 417/817 (MO) or toll-free
 - Address: Branson, MO
-- Website: valid URL
+- Website: real, working URL
 - Category: one of ${CATEGORIES.join(', ')}
+If you cannot provide ALL of these, do NOT propose the activity.
 
 === Master Agent Decision Request ===
 
@@ -468,9 +491,9 @@ Respond with ONLY a JSON object:
       );
       log('info', `[master] Meeting logged: ${meetingId}`);
 
-      // Log individual decisions (resolve names to UUIDs)
+      // Log individual decisions (only for EXISTING activities — new ones are logged after creation in Phase 4)
       for (const d of decisionsForLog) {
-        if (d.action === 'approve') {
+        if (d.action === 'approve' && d.decision_action !== 'add') {
           const activityUuid = nameToId[d.activity?.toLowerCase()];
           if (activityUuid) {
             await logDecision(meetingId, activityUuid, d.decision_action, d.reason);

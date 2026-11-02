@@ -77,15 +77,39 @@ export const KNOWN_FAKE: string[] = [
 
 /** Additional data-quality checks run on every candidate before it's accepted. */
 export const VALIDATION_RULES = {
-  // Phone must have Missouri area codes (417/817) or toll-free (800/888/877/866/855/844)
-  validPhone: (phone: string) =>
-    /^(?:\+?1\s?)?(?:417|817|8(?:00|88|77|66|55|44))/.test(phone.replace(/[\s\-\(\)]/g, '')),
-  // Address must reference Missouri (MO) and Branson-area
-  validAddress: (addr: string) => /branson/i.test(addr) && /mo\b/i.test(addr),
-  // Website must start with https
-  validWebsite: (url: string): boolean => url.startsWith('http://') || url.startsWith('https://'),
-  // Category must be in our allowed list
-  validCategory: (cat: string) => CATEGORIES.includes(cat),
+  validPhone: (phone: string): boolean => {
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    return /^(?:\+?1)?(?:417|817|8(?:00|888|77|66|55|44))/.test(cleaned);
+  },
+  validAddress: (addr: string): boolean => /branson/i.test(addr) && /mo\b/i.test(addr),
+  validWebsite: (url: string): boolean => {
+    try {
+      const u = new URL(url);
+      return (u.protocol === 'http:' || u.protocol === 'https:') &&
+             u.hostname.includes('.') &&
+             !u.hostname.includes('localhost') &&
+             !u.hostname.includes('example.com') &&
+             u.hostname.length > 4;
+    } catch {
+      return false;
+    }
+  },
+  validCategory: (cat: string): boolean => CATEGORIES.includes(cat),
+  validName: (name: string): boolean => {
+    if (!name || name.length < 3) return false;
+    const genericPatterns = [
+      'new ', 'generic', 'sample', 'proposed ', 'pending',
+      'placeholder', 'unassigned', 'todo', 'coming soon',
+      'new activity', 'new show', 'new event',
+    ];
+    const lower = name.toLowerCase();
+    for (const pattern of genericPatterns) {
+      if (lower.includes(pattern)) return false;
+    }
+    const words = name.split(/\s+/).filter(w => !['the', 'a', 'at', 'of', 'in', 'for', 'and', 'to', 'branson'].includes(w.toLowerCase()));
+    if (words.length < 2) return false;
+    return true;
+  },
 };
 
 // ── Meeting Schedule ─────────────────────────────────────────────────────────
