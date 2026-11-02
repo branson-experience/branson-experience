@@ -5,8 +5,9 @@
  * Cron: Monday 7:00 AM CST (13:00 UTC) — schedule "0 13 * * 1"
  */
 
-import { KNOWN_ATTRACTIONS, log } from './meeting/config';
-import { sendEmail } from './meeting/email-service';
+import { NextResponse } from 'next/server';
+import { KNOWN_ATTRACTIONS, log } from '../meeting/config';
+import { sendEmail } from '../meeting/email-service';
 
 const TIMEOUT = 6000;
 
@@ -22,14 +23,12 @@ async function ping(url: string): Promise<{ ok: boolean; status: number; error?:
   }
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
-
+export async function GET() {
   log('info', '[validate] Weekly check start');
 
   const items = Object.entries(KNOWN_ATTRACTIONS);
   // Parallel batches of 5 to avoid overwhelming any single host
-  const results: typeof items = [];
+  const results: Array<[string, any]> = [];
   for (let i = 0; i < items.length; i += 5) {
     const batch = await Promise.all(items.slice(i, i + 5).map(async ([name, info]) => {
       const r = await ping(info.website);
@@ -67,11 +66,9 @@ export default async function handler(req, res) {
     log('error', '[validate] Email failed:', e);
   }
 
-  // Also update the config comment with the new validation date via a log line
-  // (the actual comment update happens manually or via a separate PR)
   log('info', `[validate] Next validation recommended: ${new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)}`);
 
-  res.status(200).json({
+  return NextResponse.json({
     checked: results.length,
     ok: results.length - fails.length,
     fails: fails.length,
