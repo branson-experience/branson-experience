@@ -59,12 +59,40 @@ export function getCurrentSeason() {
   return Object.entries(SEASONS).find(([, s]) => s.months.includes(month))?.[0] ?? 'spring';
 }
 
+// ── Rotation Policy ──────────────────────────────────────────────────────────
+// Always keep EXACTLY 6 active activities. Each meeting replaces the 2 lowest-
+// scoring ones with fresh candidates to keep content rotating and current.
+export const ROTATION_POLICY = {
+  totalActive: 6,        // hard cap on active activities at any time
+  rotationCount: 2,      // activities to rotate (replace) per meeting
+  minScoreToSurvive: 35, // activities below this are auto-rotation candidates
+};
+
+// ── Anti-Hallucination ───────────────────────────────────────────────────────
+// Known-fake attractions that must NEVER be added (AI hallucinations from past runs).
+export const KNOWN_FAKE: string[] = [
+  'mountain grove lake',
+  'the show brig',
+];
+
+/** Additional data-quality checks run on every candidate before it's accepted. */
+export const VALIDATION_RULES = {
+  // Phone must have Missouri area codes (417/817) or toll-free (800/888/877/866/855/844)
+  validPhone: (phone: string) =>
+    /^(?:\+?1\s?)?(?:417|817|8(?:00|88|77|66|55|44))/.test(phone.replace(/[\s\-\(\)]/g, '')),
+  // Address must reference Missouri (MO) and Branson-area
+  validAddress: (addr: string) => /branson/i.test(addr) && /mo\b/i.test(addr),
+  // Website must start with https
+  validWebsite: (url: string): boolean => url.startsWith('http://') || url.startsWith('https://'),
+  // Category must be in our allowed list
+  validCategory: (cat: string) => CATEGORIES.includes(cat),
+};
+
 // ── Meeting Schedule ─────────────────────────────────────────────────────────
 export const MEETING_CONFIG = {
   cron: '0 8 * * *',          // 8 AM UTC daily
   maxProposalsPerAgent: 5,    // each sub-agent proposes at most 5 changes
   minScoreToRemove: 20,       // activities below this score are candidates for removal
-  maxActivePerCategory: 10,   // cap active items per category
 };
 
 // ── Logging ───────────────────────────────────────────────────────────────────

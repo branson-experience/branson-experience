@@ -1,8 +1,34 @@
 # Branson Experience — Data Integrity Rules
 
-## Before Deploying Activity Changes
+## Automated Validation (Every Cron Run)
 
-Run `npm run verify:activities` to validate all activity data:
+The AI agent system validates all activity data automatically during daily meetings:
+
+### Rotation Policy
+- **Exactly 6 activities** remain active at all times
+- **2 activities rotated** (replaced) per daily meeting
+- Lowest-scoring activities are rotated out; new ones take their place
+
+### Fake Detection
+The system blocks these **known AI hallucinations** from ever being added:
+- `Mountain Grove Lake` — does not exist
+- `The Show Brig` — does not exist (real cruise is "Silver Dollar City's Showboat")
+
+### Data Validation Rules
+Every new or updated activity is checked:
+
+| Check | Rule |
+|-------|------|
+| **Phone** | Must use Missouri area codes (417/817) or toll-free (800/888/877/866/855/844) |
+| **Address** | Must reference "Branson" and "MO" |
+| **Website** | Must be a valid http(s) URL |
+| **Category** | Must be one of: themes, water, museums, shows, dining, outdoor |
+
+Invalid data is **auto-rejected** and logged in the meeting report.
+
+## Manual Pre-Deploy (Staging/Safety Net)
+
+Run `npm run verify:activities` to validate all activity data before deploying:
 - Phone numbers have Missouri area codes (417, 817) or toll-free codes
 - Websites are reachable
 - Addresses reference Branson, Missouri — not other states/cities

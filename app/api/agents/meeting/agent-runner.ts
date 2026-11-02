@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { AI_CONFIG, CATEGORIES, SCORING_WEIGHTS, getCurrentSeason, SEASONS, MEETING_CONFIG, log } from './config';
+import { AI_CONFIG, CATEGORIES, SCORING_WEIGHTS, getCurrentSeason, SEASONS, MEETING_CONFIG, log, ROTATION_POLICY, KNOWN_FAKE, VALIDATION_RULES } from './config';
 import { sendEmail, buildDailyReportHTML, buildDailyReportText } from './email-service';
 import {
   logMeeting, logDecision, getActivityData, updateActivityStatus, getActivityByName,
-  logContentUpdate, getRecentMeetings,
+  logContentUpdate, getRecentMeetings, upsertActivity,
 } from './supabase-client';
 
 // ── LLM Call Helper ───────────────────────────────────────────────────────────
@@ -53,6 +53,62 @@ function parseAIJSON(raw) {
     }
     throw new Error(`Failed to parse AI JSON output: ${cleaned.slice(0, 200)}`);
   }
+}
+
+// ── Verification ──────────────────────────────────────────────────────────────
+
+/**
+ * Check if an activity name matches any known-fake attraction.
+ */
+function isKnownFake(name: string): boolean {
+  const lower = name.toLowerCase();
+  return KNOWN_FAKE.some(fake => lower.includes(fake));
+}
+
+/**
+ * Validate activity data against our quality rules.
+ * Returns { valid: true } or { valid: false, reasons: string[] }.
+ */
+function validateActivityData(details: Record<string, unknown>) {
+  const reasons: string[] = [];
+  const name = (details.name ?? details.title ?? '').toString();
+  const phone = (details.phone ?? '').toString();
+  const address = (details.address ?? '').toString();
+  const website = (details.website ?? '').toString();
+  const category = (details.category ?? '').toString();
+
+  // Block known fakes
+  if (isKnownFake(name)) {
+    reasons.push(`KNOWN FAKE: "${name}" is a known hallucination — never add`);
+  }
+
+  // Phone: must be Missouri (417/817) or toll-free
+  if (phone && !VALIDATION_RULES.validPhone(phone)) {
+    const hasCode = phone.replace(/[\s\-\(\)]/g, '').match(/^(?:\+?1\s?)?\d{3}/);
+    const code = hasCode ? hasCode[0].replace(/\D/g, '') : 'N/A';
+    if (!['417', '817', '800', '888', '877', '866', '855', '844'].includes(code)) {
+      reasons.push(`INVALID PHONE area code "${code}" — must be 417/817 (MO) or toll-free`);
+    }
+  }
+
+  // Address must reference Branson, MO
+  if (address && !VALIDATION_RULES.validAddress(address)) {
+    reasons.push(`INVALID ADDRESS: "${address}" — must reference Branson, MO`);
+  }
+
+  // Website must be a valid URL
+  if (website && !VALIDATION_RULES.validWebsite(website)) {
+    reasons.push(`INVALID WEBSITE: "${website}" — must be a valid URL`);
+  }
+
+  // Category must be in our allowed list
+  if (category && !VALIDATION_RULES.validCategory(category)) {
+    reasons.push(`INVALID CATEGORY: "${category}" — must be one of ${CATEGORIES.join(', ')}`);
+  }
+
+  return reasons.length === 0
+    ? { valid: true, reasons: [] }
+    : { valid: false, reasons };
 }
 
 // ── SubAgent ──────────────────────────────────────────────────────────────────
@@ -115,19 +171,24 @@ class SubAgent {
       `- id: ${a.id}\n  name: ${a.name}\n  status: ${a.status}\n  score: ${a.score}\n  last_reviewed: ${a.last_reviewed ?? 'never'}\n  metadata: ${JSON.stringify(a.metadata ?? {})}\n`
     ).join('\n');
 
+    const knownFake = KNOWN_FAKE.join(', ');
+
     return `You are the ${this.category} sub-agent for Branson Experience content management.
 
 ${this.seasonPrompt()}
 
 Your job: review each activity, score it (0-100), and propose actions.
 Actions: keep, promote, demote, update, remove
+You may also propose NEW activities to add to this category.
+
+CRITICAL: Never suggest these known-fake attractions (AI hallucinations): ${knownFake}
+Every new activity suggestion must be a real, verifiable attraction in Branson, MO.
 
 Activities under review:
-${activityList}
+${activityList || '(no active activities in this category)'}
 
-Current active limit: ${MEETING_CONFIG.maxActivePerCategory}
-Minimum score to avoid removal: ${MEETING_CONFIG.minScoreToRemove}
-Max proposals: ${MEETING_CONFIG.maxProposalsPerAgent}
+Current active pool: ${ROTATION_POLICY.totalActive} total across all categories
+Activities to rotate this cycle: ${ROTATION_POLICY.rotationCount}
 
 Respond with ONLY a JSON object matching this schema:
 {
@@ -135,7 +196,7 @@ Respond with ONLY a JSON object matching this schema:
     { "activity_id": "...", "name": "...", "score": 75, "action": "keep", "reason": "..." }
   ],
   "proposals": [
-    { "action": "add|remove|update", "activity_id": "..." or "activity": "...", "reason": "...", "details": { ... } }
+    { "action": "add|remove|update", "activity_id": "..." or "activity": "...", "reason": "...", "details": { "name": "...", "category": "...", "phone": "...", "address": "...", "website": "..." } }
   ],
   "agent_notes": "Brief summary of your review"
 }
@@ -205,17 +266,36 @@ ${reviewedSection}
 === Proposals for Discussion ===
 ${proposalsSection || 'No proposals submitted.'}
 
+=== ROTATION POLICY ===
+- Keep exactly ${ROTATION_POLICY.totalActive} active activities total
+- Rotate (replace) ${ROTATION_POLICY.rotationCount} activities each cycle
+- Rotate out the ${ROTATION_POLICY.rotationCount} lowest-scoring activities (score < ${ROTATION_POLICY.minScoreToSurvive})
+- Replace with the best new additions from the proposals
+
+=== ANTI-HALLUCINATION ===
+Known-fake attractions that must NEVER be added: ${KNOWN_FAKE.join(', ')}
+Every new activity must pass data validation:
+- Phone: Missouri area codes (417/817) or toll-free
+- Address: Branson, MO
+- Website: valid URL
+- Category: one of ${CATEGORIES.join(', ')}
+
 === Master Agent Decision Request ===
 
 As the Master Agent, you must:
 1. Evaluate all sub-agent proposals for conflicts and priorities
-2. Make final decisions on each proposal (approve / deny)
-3. Write a meeting summary
+2. Select the ${ROTATION_POLICY.rotationCount} lowest-scoring activities to rotate out
+3. Select the best new activities to rotate in (they must pass validation)
+4. Make final decisions on each proposal (approve / deny)
+5. Write a meeting summary
 
 Respond with ONLY a JSON object:
 {
+  "rotate_out": [
+    { "activity": "...", "score": 20, "reason": "..." }
+  ],
   "final_decisions": [
-    { "sub_agent": "...", "activity": "...", "action": "approve|deny", "decision_action": "add|remove|update|promote|demote|keep", "reason": "..." }
+    { "sub_agent": "...", "activity": "...", "action": "approve|deny", "decision_action": "add|remove|update|promote|demote|keep", "reason": "...", "details": { ... } }
   ],
   "summary": "Brief meeting summary (2-4 sentences)",
   "agent_notes": "Additional context or observations"
@@ -223,11 +303,65 @@ Respond with ONLY a JSON object:
   }
 
   /**
+   * Determine which activities to rotate out based on scores.
+   * Returns the lowest-scoring activities up to rotationCount.
+   */
+  async getRotationCandidates(activeActivities) {
+    const sorted = [...activeActivities].sort((a, b) => (a.combined_score ?? a.score ?? 50) - (b.combined_score ?? b.score ?? 50));
+    return sorted.slice(0, ROTATION_POLICY.rotationCount);
+  }
+
+  /**
+   * Enforce the active pool: ensure exactly ROTATION_POLICY.totalActive activities.
+   * If over, deactivate extras (lowest score first). If under, mark drafts as active.
+   */
+  async enforceActivePool(activeActivities, meetingId, meetingDate) {
+    const changes: string[] = [];
+    const maxActive = ROTATION_POLICY.totalActive;
+
+    if (activeActivities.length > maxActive) {
+      // Sort by score ascending, deactivate the lowest ones
+      const excess = activeActivities
+        .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
+        .slice(0, activeActivities.length - maxActive);
+
+      for (const activity of excess) {
+        await updateActivityStatus(activity.id, { status: 'archived', last_reviewed: meetingDate.toISOString() });
+        const msg = `${activity.name} → archived (${activeActivities.length} > ${maxActive} limit)`;
+        changes.push(msg);
+        log('info', `[pool] ${msg}`);
+        await logDecision(meetingId, activity.id, 'inactive', msg);
+      }
+    }
+
+    if (activeActivities.length < maxActive) {
+      // Activate dormant/draft activities to fill the pool
+      const needed = maxActive - activeActivities.length;
+      const dormant = await getActivityData(null, 'archived');
+      const drafts = await getActivityData(null, 'draft');
+      const pool = [...(dormant ?? []), ...(drafts ?? [])]
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .slice(0, needed);
+
+      for (const activity of pool) {
+        await updateActivityStatus(activity.id, { status: 'active', last_reviewed: meetingDate.toISOString() });
+        const msg = `${activity.name} → activated from ${activity.status}`;
+        changes.push(msg);
+        log('info', `[pool] ${msg}`);
+        await logDecision(meetingId, activity.id, 'activate', msg);
+      }
+    }
+
+    return changes;
+  }
+
+  /**
    * Run one complete meeting cycle:
    * 1. Each sub-agent reviews its category
    * 2. Master agent holds a meeting and makes decisions
-   * 3. Decisions are applied to the database
-   * 4. Email report is sent
+   * 3. Decisions are validated and applied to the database
+   * 4. Active pool is enforced (exactly 6)
+   * 5. Email report is sent
    */
   async runMeeting() {
     const meetingDate = new Date();
@@ -257,34 +391,43 @@ Respond with ONLY a JSON object:
     // ── Phase 2: Master agent meeting ───────────────────────────────────────
     log('info', `[master] Holding meeting with ${subAgentResults.length} sub-agents`);
 
+    // Gather current active activities with scores for rotation decisions
+    const allActive = await getActivityData(null, 'active');
+    const allActiveScored = subAgentResults.flatMap(r =>
+      (r.reviewed ?? []).map(rev => ({
+        ...rev,
+        ...allActive.find(a => a.id === rev.activity_id || a.name?.toLowerCase() === rev.name?.toLowerCase()),
+      }))
+    );
+
     let meetingResult: Record<string, unknown>;
     try {
       const meetingPrompt = this.buildMeetingPrompt(subAgentResults);
+      // Inject scored active pool info into the prompt
+      const scoreSummary = allActiveScored
+        .sort((a, b) => (b.combined_score ?? 0) - (a.combined_score ?? 0))
+        .map(a => `- ${a.name}: ${(a.combined_score ?? a.score).toFixed(1)}`)
+        .join('\n');
+
       const raw = await callAI(
-        'You are the Master Agent for Branson Experience — make wise content management decisions.',
+        `You are the Master Agent for Branson Experience — make wise content management decisions.\n\nCurrent active activities (${allActiveScored.length}):\n${scoreSummary}\n\nKeep exactly ${ROTATION_POLICY.totalActive} active. Replace ${ROTATION_POLICY.rotationCount} per cycle.`,
         meetingPrompt,
       );
       meetingResult = parseAIJSON(raw);
     } catch (err) {
       log('error', `[master] Meeting LLM call failed:`, err);
-      // Fallback: approve all proposals
+      // Fallback: no-op meeting with rotation of lowest scorers
       meetingResult = {
-        final_decisions: subAgentResults.flatMap(r =>
-          (r.proposals ?? []).map(p => ({
-            sub_agent: r.category,
-            activity: p.activity ?? p.activity_id,
-            action: 'approve',
-            decision_action: p.action,
-            reason: `Auto-approved (LLM fallback): ${p.reason}`,
-          }))
-        ),
-        summary: `Automated meeting — LLM unavailable, ${subAgentResults.length} agents reported. Proposals auto-approved.`,
+        rotate_out: allActiveScored.slice(0, ROTATION_POLICY.rotationCount),
+        final_decisions: [],
+        summary: `Automated meeting — LLM unavailable. Active pool enforcement in progress.`,
         agent_notes: `LLM call failed: ${err instanceof Error ? err.message : String(err)}`,
       };
     }
 
     // ── Phase 3: Log meeting + decisions ────────────────────────────────────
     const decisionsForLog = meetingResult.final_decisions ?? [];
+    const rotateOut = meetingResult.rotate_out ?? [];
     const decisionsArray = decisionsForLog.map(d => ({
       sub_agent: d.sub_agent,
       activity: d.activity,
@@ -296,7 +439,7 @@ Respond with ONLY a JSON object:
     const allActivities = await getActivityData(null, null);
     const nameToId: Record<string, string> = {};
     for (const a of allActivities) {
-      nameToId[a.name.toLowerCase()] = a.id;
+      nameToId[a.name?.toLowerCase()] = a.id;
     }
 
     let meetingId: string | undefined;
@@ -323,37 +466,155 @@ Respond with ONLY a JSON object:
       log('error', `[master] Failed to log meeting:`, err);
     }
 
-    // ── Phase 4: Apply approved decisions to activities ──────────────────────
-    const appliedChanges = [];
+    // ── Phase 4: Apply approved decisions (with validation) ─────────────────
+    const appliedChanges: string[] = [];
+    const addedIds: string[] = []; // track new activities added this cycle
+
     for (const d of decisionsForLog) {
       if (d.action !== 'approve') continue;
-      const activityUuid = nameToId[d.activity?.toLowerCase()];
-      if (!activityUuid) {
-        log('warn', `[master] Skipped — activity not in DB: ${d.activity}`);
+
+      const details = d.details ?? {};
+      const activityName = (d.activity ?? details.name ?? '').toString();
+
+      // ── VALIDATE new additions ─────────────────────────────────────────
+      if (d.decision_action === 'add') {
+        const validation = validateActivityData(details);
+        if (!validation.valid) {
+          log('warn', `[master] REJECTED addition "${activityName}": ${validation.reasons.join('; ')}`);
+          appliedChanges.push(`❌ "${activityName}" rejected: ${validation.reasons.join('; ')}`);
+          continue;
+        }
+        // Verify it's not already in the DB
+        if (nameToId[activityName?.toLowerCase()]) {
+          log('info', `[master] "${activityName}" already exists — updating instead`);
+          // Fall through to update path
+        } else {
+          // Insert the new activity
+          const safeCategory = CATEGORIES.includes(details.category) ? details.category : CATEGORIES[0];
+          try {
+            const newActivity = await upsertActivity(
+              activityName || details.name,
+              safeCategory,
+              details,
+              60, // starting score for new activities
+              'active',
+            );
+            const newId = newActivity?.[0]?.id;
+            if (newId) {
+              addedIds.push(newId);
+              log('info', `[master] Added: ${activityName} (${newId})`);
+              appliedChanges.push(`✅ Added "${activityName}"`);
+              await logDecision(meetingId, newId, 'add', `New activity added: ${d.reason}`);
+            }
+          } catch (err) {
+            log('error', `[master] Failed to add ${activityName}:`, err);
+            appliedChanges.push(`❌ Failed to add "${activityName}": ${err instanceof Error ? err.message : String(err)}`);
+          }
+          continue;
+        }
+      }
+
+      // ── UPDATE existing ────────────────────────────────────────────────
+      if (d.decision_action === 'update') {
+        const activityUuid = nameToId[activityName?.toLowerCase()];
+        if (!activityUuid) {
+          log('warn', `[master] Skipped update — activity not in DB: ${activityName}`);
+          appliedChanges.push(`⚠️ Skipped update "${activityName}": not found`);
+          continue;
+        }
+        try {
+          // Validate contact details if provided
+          if ((details.phone || details.address || details.website)) {
+            const validation = validateActivityData(details);
+            if (!validation.valid) {
+              log('warn', `[master] REJECTED update for "${activityName}": ${validation.reasons.join('; ')}`);
+              appliedChanges.push(`❌ "${activityName}" update rejected: ${validation.reasons.join('; ')}`);
+              continue;
+            }
+          }
+          const updatePayload: Record<string, unknown> = { last_reviewed: meetingDate.toISOString() };
+          if (details.score != null) updatePayload.score = details.score;
+          if (details.status) updatePayload.status = details.status;
+          if (details.metadata) updatePayload.metadata = details.metadata;
+          await updateActivityStatus(activityUuid, updatePayload);
+          appliedChanges.push(`🔄 Updated "${activityName}"`);
+          await logDecision(meetingId, activityUuid, 'update', d.reason);
+        } catch (err) {
+          log('error', `[master] Failed to update ${activityName}:`, err);
+        }
         continue;
       }
+
+      // ── REMOVE / PROMOTE / DEMOTE (existing paths) ─────────────────────
+      const activityUuid = nameToId[activityName?.toLowerCase()];
+      if (!activityUuid) {
+        log('warn', `[master] Skipped — activity not in DB: ${activityName}`);
+        appliedChanges.push(`⚠️ Skipped "${activityName}": not found in DB`);
+        continue;
+      }
+
       try {
         if (d.decision_action === 'remove') {
           await updateActivityStatus(activityUuid, { status: 'removed', last_reviewed: meetingDate.toISOString() });
-          appliedChanges.push(`${d.activity} → removed`);
+          appliedChanges.push(`🗑️ "${activityName}" → removed`);
         } else if (d.decision_action === 'promote') {
           await updateActivityStatus(activityUuid, { score: 90, status: 'active', last_reviewed: meetingDate.toISOString() });
-          appliedChanges.push(`${d.activity} → promoted`);
+          appliedChanges.push(`⬆️ "${activityName}" → promoted`);
         } else if (d.decision_action === 'demote') {
           await updateActivityStatus(activityUuid, { score: 30, last_reviewed: meetingDate.toISOString() });
-          appliedChanges.push(`${d.activity} → demoted`);
+          appliedChanges.push(`⬇️ "${activityName}" → demoted`);
         }
       } catch (err) {
-        log('warn', `[master] Failed to apply decision for ${d.activity}:`, err);
+        log('warn', `[master] Failed to apply decision for ${activityName}:`, err);
       }
     }
 
-    // ── Phase 5: Email report ────────────────────────────────────────────────
+    // ── Phase 5: Rotation — replace lowest-scoring activities ─────────────
+    // Identify and rotate out the lowest-scoring activities, then activate replacements
+    const rotationChanges: string[] = [];
+    if (meetingId) {
+      const toRotate = rotateOut.map((r: any) => ({
+        name: r.name ?? r.activity,
+        score: r.score ?? 0,
+        id: nameToId[(r.name ?? r.activity)?.toLowerCase()],
+      })).filter(r => r.id);
+
+      for (const item of toRotate) {
+        if (!item.id) continue;
+        try {
+          await updateActivityStatus(item.id, { status: 'archived', last_reviewed: meetingDate.toISOString() });
+          const msg = `🔄 Rotation out: "${item.name}" (score: ${item.score ?? 'N/A'})`;
+          rotationChanges.push(msg);
+          log('info', `[rotation] ${msg}`);
+          await logDecision(meetingId, item.id, 'rotate-out', `Rotated out — score ${item.score ?? 'low'}`);
+          // Remove from added this cycle so it doesn't block
+          const idx = addedIds.indexOf(item.id);
+          if (idx !== -1) addedIds.splice(idx, 1);
+        } catch (err) {
+          log('error', `[rotation] Failed to rotate out ${item.name}:`, err);
+        }
+      }
+    }
+
+    // ── Phase 6: Enforce active pool ──────────────────────────────────────
+    const poolChanges: string[] = [];
+    if (meetingId) {
+      const currentActive = await getActivityData(null, 'active');
+      const poolAdjustments = await this.enforceActivePool(currentActive, meetingId, meetingDate);
+      poolChanges.push(...poolAdjustments);
+    }
+
+    const allChanges = [...appliedChanges, ...rotationChanges, ...poolChanges];
+
+    // ── Phase 7: Email report ─────────────────────────────────────────────
     const stats = [
       { label: 'Categories reviewed', value: subAgentResults.length },
       { label: 'Decisions made',     value: decisionsForLog.length },
       { label: 'Changes applied',    value: appliedChanges.length },
+      { label: 'Activities rotated', value: rotationChanges.length },
+      { label: 'Pool adjustments',   value: poolChanges.length },
       { label: 'Sub-agents active',  value: subAgentResults.filter(r => !r.agent_notes?.includes('Error')).length },
+      { label: 'Active pool size',   value: (await getActivityData(null, 'active')).length },
     ];
 
     const reportData = {
@@ -361,6 +622,10 @@ Respond with ONLY a JSON object:
       summary: meetingResult.summary ?? 'Meeting completed.',
       decisions: decisionsArray,
       stats,
+      rotation: {
+        rotateOut: rotateOut.map((r: any) => ({ name: r.name ?? r.activity, score: r.score })),
+        added: addedIds.length,
+      },
     };
 
     try {
@@ -377,15 +642,20 @@ Respond with ONLY a JSON object:
       log('error', `[master] Email failed:`, err);
     }
 
-    // ── Result ────────────────────────────────────────────────────────────────
+    // ── Result ──────────────────────────────────────────────────────────────
     const result = {
       meeting_id: meetingId,
       date: meetingDate.toISOString(),
       sub_agents: subAgentResults.length,
       decisions: decisionsForLog.length,
-      changes_applied: appliedChanges.length,
+      changes_applied: allChanges.length,
       summary: meetingResult.summary,
-      applied_changes: appliedChanges,
+      applied_changes: allChanges,
+      rotation: {
+        rotated_out: rotateOut.map((r: any) => r.name ?? r.activity),
+        added: addedIds.length,
+        active_pool: (await getActivityData(null, 'active')).length,
+      },
       category_results: subAgentResults.map(r => ({
         category: r.category,
         reviewed: (r.reviewed ?? []).length,
@@ -394,7 +664,7 @@ Respond with ONLY a JSON object:
       })),
     };
 
-    log('info', `=== Meeting complete: ${result.decisions} decisions, ${result.changes_applied} changes ===`);
+    log('info', `=== Meeting complete: ${result.decisions} decisions, ${result.changes_applied} changes, ${result.rotation.rotated_out.length} rotated ===`);
     return result;
   }
 }
@@ -406,7 +676,7 @@ const masterAgent = new MasterAgent();
 /** Default export for API routes; also runnable as standalone script. */
 export default masterAgent;
 
-export { MasterAgent, SubAgent };
+export { MasterAgent, SubAgent, validateActivityData, isKnownFake };
 
 // Allow running directly: node --input-type=modules scripts/agent-runner.js
 if (process.argv[1]?.endsWith('agent-runner.js')) {
