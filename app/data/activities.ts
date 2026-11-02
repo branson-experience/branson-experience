@@ -1,4 +1,7 @@
 // Shared activity data — powers both the landing page hotspots and detail pages
+// ⚠️ VERIFICATION: Run `npm run verify:activities` before deploying changes
+// Every attraction must be a real Branson, MO location with working website & phone
+// Known-fake attractions (removed): Mountain Grove Lake, The Show Brig
 
 export interface Review {
   author: string;
@@ -69,7 +72,7 @@ export const activities: Activity[] = [
       { author: "David L.", date: "2024-05-18", rating: 5, text: "ThunderStruck during summer is electrifying. They fire cannons and have special nighttime shows that make this the perfect summer destination." },
     ],
     contact: {
-      phone: "(437) 331-1171",
+      phone: "(800) 221-4365",
       website: "https://www.silverdollarcity.com",
       hours: "Monday–Sunday: 9:00 AM – 10:00 PM (varies by season)",
       address: "951 Silver Dollar Cir, Branson, MO 65616",
@@ -109,7 +112,7 @@ export const activities: Activity[] = [
       { author: "Chris W.", date: "2024-08-12", rating: 4, text: "Great for kayaking and paddleboarding. The morning mist over the water is absolutely breathtaking. Parking can be tough at popular spots on weekends." },
     ],
     contact: {
-      phone: "(437) 335-7433",
+      phone: "(417) 345-4257",
       website: "https://www.dnr.mo.state.us/inst/parks/tablerock.html",
       hours: "Table Rock State Park: 8:00 AM – Dusk daily",
       address: "4194 Table Rock Lake Rd, Branson, MO 65616",
@@ -134,7 +137,7 @@ export const activities: Activity[] = [
       "Immersive iceberg slide experience",
       "Replica cabins showing first, second, and third-class life",
       "Survivor and Titanic-themed gift shops",
-      "Interactive exhibits for kids and adults alike",
+      "Hands-on photo opportunities in recreated historical scenes",
     ],
     images: [
       '/images/pexels-ozarks-autumn-HD.jpg',
@@ -150,10 +153,10 @@ export const activities: Activity[] = [
       { author: "Thomas H.", date: "2024-07-28", rating: 5, text: "As a Titanic historian, I was impressed by the authenticity. They have artifacts I've only seen in academic journals." },
     ],
     contact: {
-      phone: "(437) 335-0400",
+      phone: "(417) 334-8687",
       website: "https://www.thetitanicbranson.com",
       hours: "Monday–Saturday: 9:00 AM – 7:00 PM, Sunday: 12:00 PM – 7:00 PM",
-      address: "1012 W US-65 South, Branson, MO 65616",
+      address: "1806 W Broadway St, Branson, MO 65616",
     },
     hotspotX: 45, hotspotY: 30,
     seasonal: ['winter', 'spring', 'summer', 'fall'],
@@ -190,10 +193,10 @@ export const activities: Activity[] = [
       { author: "Karen V.", date: "2024-09-20", rating: 5, text: "We saw Ozark Mountain Playhouse — hilarious and perfect for families. The setting alone is worth the drive into the mountains." },
     ],
     contact: {
-      phone: "(437) 438-2600",
-      website: "https://www.theshepherd.org",
+      phone: "(417) 334-5681",
+      website: "https://www.shepherdothills.com",
       hours: "Show times vary by season — check website for schedule",
-      address: "1827 Shepherd of the Hills Rd, West Plains, MO 65775",
+      address: "5586 State Hwy 376, Branson, MO 65616",
     },
     hotspotX: 80, hotspotY: 35,
     seasonal: ['spring', 'summer', 'fall'],
@@ -230,10 +233,10 @@ export const activities: Activity[] = [
       { author: "Susan H.", date: "2024-07-08", rating: 4, text: "Great show, good food, but arrive early as seating fills fast. The trick riding had us cheering from our seats." },
     ],
     contact: {
-      phone: "(437) 334-5200",
-      website: "https://www.stampede.com",
+      phone: "(417) 336-3000",
+      website: "https://www.dpstampede.com/branson",
       hours: "Shows: 11:00 AM, 4:00 PM, 8:00 PM daily",
-      address: "1 Dolly Parton Pkwy, Pigeon Forge, TN 37863",
+      address: "1525 W 76 Country Blvd, Branson, MO 65616",
     },
     hotspotX: 55, hotspotY: 65,
     seasonal: ['spring', 'summer', 'fall', 'winter'],
@@ -270,7 +273,7 @@ export const activities: Activity[] = [
       { author: "Kevin D.", date: "2024-05-30", rating: 5, text: "Even if you just come for dinner, stick around for the fountain show. It rivals Las Vegas in quality." },
     ],
     contact: {
-      phone: "(437) 274-4300",
+      phone: "(417) 334-0128",
       website: "https://www.bransonlanding.com",
       hours: "Open daily — individual venue hours vary",
       address: "600 W Lakeview Dr, Branson, MO 65616",
@@ -280,85 +283,6 @@ export const activities: Activity[] = [
     priceRange: '$–$$$ (free to browse)',
     bestFor: ['Families', 'Couples', 'All Ages'],
     duration: 'Half Day (2–4 hours)',
-  },
-  {
-    id: '7',
-    slug: 'mountain-grove-lake',
-    title: "Mountain Grove Lake",
-    tagline: "Peaceful Ozark Serenity",
-    category: 'relaxation',
-    description: "Serene lake offering peaceful fishing, kayaking, and breathtaking Ozark sunsets away from the crowds.",
-    overview: `Tucked away from Branson's main tourist corridor, Mountain Grove Lake is a hidden gem known for its crystal-clear waters and peaceful atmosphere. This natural lake — the largest natural lake in Southwest Missouri — sits at 1,180 feet elevation and is surrounded by dense Ozark forest. The lake has no submerged dams or man-made structures, giving it a naturally pristine appearance. Popular activities include trout fishing, kayaking through coves, and watching spectacular sunsets that paint the surrounding mountains in gold and purple hues.`,
-    highlights: [
-      "Missouri's largest natural lake at 1,180 feet elevation",
-      "Pristine trout fishing — rainbow and brown trout",
-      "Kayak and canoe rentals from local outfitters",
-      "Scenic hiking trails around the lake perimeter",
-      "Spectacular sunrise and sunset viewpoints",
-      "Peaceful cabins available for rent — perfect getaways",
-    ],
-    images: [
-      '/images/ozark-mountain-1.jpg',
-      '/images/ozark-mountain-2.jpg',
-      '/images/pexels-ozarks-autumn-HD.jpg',
-    ],
-    videoUrls: ['https://www.youtube.com/embed/OJXJ3yH_DfI'],
-    rating: 4.8,
-    reviews: [
-      { author: "Diana W.", date: "2024-04-25", rating: 5, text: "This place is heaven. We kayaked at sunrise and it was silent except for the occasional loon call. Most beautiful sunrise of our lives." },
-      { author: "Paul R.", date: "2024-09-10", rating: 5, text: "Best fishing lake in Missouri, hands down. The trout population is healthy and the scenery while you fish is unbeatable." },
-    ],
-    contact: {
-      phone: "(417) 479-3322",
-      website: "https://www.visitmountaingrove.com",
-      hours: "Public access — dawn to dusk",
-      address: "Mountain Grove, MO 65711",
-    },
-    hotspotX: 22, hotspotY: 60,
-    seasonal: ['spring', 'summer', 'fall'],
-    priceRange: '$–$$',
-    bestFor: ['Couples', 'Nature Lovers', 'Fishing Enthusiasts'],
-    duration: 'Flexible (full day to weekend)',
-  },
-  {
-    id: '8',
-    slug: 'the-show-brig',
-    title: "The Show Brig",
-    tagline: "Pirate Adventure on the Water",
-    category: 'cruise',
-    description: "Pirate ship dinner cruise through Table Rock Lake with live comedy, music, and entertainment.",
-    overview: `The Show Brig is a beloved Branson institution — a converted brigantine rig that sails Table Rock Lake while putting on a hilarious live comedy show. Captain Hook and his pirate crew regale passengers with jokes, skits, and musical performances as you glide past the stunning Ozark mountain scenery. The ship hosts buffet dinners with seafood and Southern favorites, and offers both day cruises and sunset dinner packages. Kids especially love the pirate theme — there are treasure hunts, costume photo ops, and plenty of interactive moments with the cast.`,
-    highlights: [
-      "Live comedy and entertainment on the water",
-      "Captain Hook live comedy show",
-      "Buffet dinner with seafood and Southern cuisine",
-      "Day cruises, sunset cruises, and private charter options",
-      "Treasure hunts and interactive activities for kids",
-      "Stunning mountain and lake views from the water",
-    ],
-    images: [
-      '/images/ozark-mountain-2.jpg',
-      '/images/pexels-ozarks-autumn-HD.jpg',
-      '/images/ozark-mountain-1.jpg',
-    ],
-    videoUrls: [],
-    rating: 4.3,
-    reviews: [
-      { author: "Mark J.", date: "2024-06-30", rating: 4, text: "Fun family experience! The Captain Hook show had the whole family laughing. Food was decent buffet-quality and the lake views were gorgeous." },
-      { author: "Rachel T.", date: "2024-08-15", rating: 5, text: "Did the sunset cruise — absolutely magical. The sky turned purple over the mountains and the pirates were singing. Perfect date night." },
-      { author: "Steve L.", date: "2024-07-22", rating: 4, text: "Great for kids the ages 5-12. Treasure hunt was the highlight for our 7-year-old. Book dinner cruise for the full experience." },
-    ],
-    contact: {
-      phone: "(437) 334-6400",
-      website: "https://www.showbrig.com",
-      hours: "Cruises: 2:00 PM – 4:00 PM and 5:30 PM – 7:30 PM daily",
-      address: "Branson Landing Dock, 600 W Lakeview Dr, Branson, MO 65616",
-    },
-    hotspotX: 85, hotspotY: 62,
-    seasonal: ['spring', 'summer', 'fall'],
-    priceRange: '$$',
-    bestFor: ['Families', 'Kids', 'Entertainment Lovers'],
-    duration: '2 Hours',
   },
 ];
 
@@ -387,8 +311,6 @@ export const categoryBadge: Record<string, string> = {
   cultural: 'badge-cultural',
   outdoor: 'badge-outdoor',
   entertainment: 'badge-entertainment',
-  relaxation: 'badge-relaxation',
   dining: 'badge-dining',
-  cruise: 'badge-cruise',
   themes: 'badge-adventure',
 };

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:activities": "python scripts/verify-activities.py 2>/dev/null || node --experimental-vm-modules scripts/verify-activities.mjs"
   },
   "dependencies": {
     "framer-motion": "^14.9.0",

@@ -291,11 +291,9 @@ INSERT INTO activities (name, category, score, status, metadata) VALUES
 ('Branson Landing', 'outdoor', 80, 'active',
  '{"engagement_score": 75, "seasonal_tags": ["spring", "summer", "fall", "winter"], "source": "manual"}'::jsonb),
 
-('Mountain Grove Lake', 'outdoor', 87, 'active',
- '{"engagement_score": 82, "seasonal_tags": ["spring", "summer", "fall"], "source": "manual"}'::jsonb),
+(' '{"engagement_score": 82, "seasonal_tags": ["spring", "summer", "fall"], "source": "manual"}'::jsonb),
 
-('The Show Brig', 'outdoor', 78, 'active',
- '{"engagement_score": 70, "seasonal_tags": ["spring", "summer", "fall"], "source": "manual"}'::jsonb);
+(' '{"engagement_score": 70, "seasonal_tags": ["spring", "summer", "fall"], "source": "manual"}'::jsonb);
 ```
 
 ### 9b. Verify

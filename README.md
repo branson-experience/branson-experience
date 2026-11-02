@@ -69,8 +69,7 @@ MasterAgent (orchestrator)
 ├── museums-agent → Titanic Museum
 ├── shows-agent → Shepherd of the Hills
 ├── dining-agent → Dolly Parton's Stampede
-└── outdoor-agent → The Show Brig, Branson Landing
-
+└── outdoor-agent → 
 Daily: review → score → propose → decide → apply → email report
 ```
 
@@ -108,9 +107,7 @@ git init && git add . && git commit -m "Branson Experience"
 | Shepherd of the Hills | Outdoor | Evening |
 | Dolly Parton's Stampede | Dining | 4 Hours |
 | Branson Landing | Entertainment | 2–4 Hours |
-| Mountain Grove Lake | Relaxation | Flexible |
-| The Show Brig | Cruise | 2 Hours |
-
+| | 
 ## License
 
 MIT
