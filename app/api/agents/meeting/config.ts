@@ -115,6 +115,12 @@ export const KNOWN_ATTRACTIONS: Record<string, { phone: string; address: string;
     website: 'https://www.mimosafarm.com',
     category: 'outdoor',
   },
+  'branson zipline at wolfe creek': {
+    phone: '(417) 335-9100',
+    address: '15757 S State Hwy 248, Willow Springs, MO 65793 (Branson area)',
+    website: 'https://www.wolfemountainbranson.com',
+    category: 'outdoor',
+  },
 };
 
 /** Additional data-quality checks run on every candidate before it's accepted. */

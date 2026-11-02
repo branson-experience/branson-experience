@@ -70,7 +70,10 @@ function isKnownFake(name: string): boolean {
  * Mutates `details` in-place, filling in any missing phone/address/website/category.
  */
 function enrichDetails(details: Record<string, unknown>, activityName: string): Record<string, unknown> {
-  const name = ((details.name ?? activityName ?? '') as string).toLowerCase();
+  // Always ensure name is set from the decision's activity field — the LLM often
+  // puts the name on the decision itself, not inside details.
+  if (!details.name) details.name = activityName;
+  const name = (activityName as string).toLowerCase();
   // Direct match or partial match against known-good attractions
   for (const [key, info] of Object.entries(KNOWN_ATTRACTIONS)) {
     if (name.includes(key) || key.includes(name)) {
@@ -78,9 +81,6 @@ function enrichDetails(details: Record<string, unknown>, activityName: string): 
       if (!details.address) details.address = info.address;
       if (!details.website) details.website = info.website;
       if (!details.category) details.category = info.category;
-      if (!details.name) details.name = activityName || key;
-      // Ensure name field is set
-      if (!details.name) details.name = info.phone ? activityName : details.name;
       break;
     }
   }
@@ -634,17 +634,21 @@ Respond with ONLY a JSON object:
       }
     }
 
-    // ── Phase 5: Rotation — replace lowest-scoring activities ─────────────
-    // Identify and rotate out the lowest-scoring activities, then activate replacements
+    // ── Phase 5: Rotation — replace lowest-scoring, ONLY if additions succeeded ──
+    // Only archive outgoing if there are actual new activities to replace them;
+    // otherwise we just rotate the same 6 in/out every cycle (net zero).
     const rotationChanges: string[] = [];
-    if (meetingId) {
+    if (meetingId && addedIds.length > 0) {
       const toRotate = rotateOut.map((r: any) => ({
         name: r.name ?? r.activity,
         score: r.score ?? 0,
         id: nameToId[(r.name ?? r.activity)?.toLowerCase()],
       })).filter(r => r.id);
 
-      for (const item of toRotate) {
+      // Limit rotation to the number of successful additions (can't rotate more than we added)
+      const rotateCount = Math.min(toRotate.length, addedIds.length, ROTATION_POLICY.rotationCount);
+      for (let i = 0; i < rotateCount; i++) {
+        const item = toRotate[i];
         if (!item.id) continue;
         try {
           await updateActivityStatus(item.id, { status: 'archived', last_reviewed: meetingDate.toISOString() });
@@ -652,13 +656,12 @@ Respond with ONLY a JSON object:
           rotationChanges.push(msg);
           log('info', `[rotation] ${msg}`);
           await logDecision(meetingId, item.id, 'remove', `Rotated out — score ${item.score ?? 'low'}`);
-          // Remove from added this cycle so it doesn't block
-          const idx = addedIds.indexOf(item.id);
-          if (idx !== -1) addedIds.splice(idx, 1);
         } catch (err) {
           log('error', `[rotation] Failed to rotate out ${item.name}:`, err);
         }
       }
+    } else if (meetingId && rotateOut.length > 0) {
+      log('warn', `[rotation] Skipped rotation — ${rotateOut.length} targeted but 0 new additions succeeded`);
     }
 
     // ── Phase 6: Enforce active pool ──────────────────────────────────────
