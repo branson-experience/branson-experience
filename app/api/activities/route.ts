@@ -61,7 +61,7 @@ function mapToHotspots(records: Array<Record<string, unknown>>): Array<Record<st
     return {
       id: record.id,
       slug,
-      title: record['full_name'] || name, // Try full_name from metadata first
+      title: (record['full_name'] || name).replace(/\b\w/g, c => c.toUpperCase()), // Title case
       category: record.category,
       description: record['description'] || record.metadata?.description || '',
       image,
