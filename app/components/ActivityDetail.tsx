@@ -7,6 +7,7 @@ import ReviewCard from './ReviewCard';
 import Link from 'next/link';
 import type { Activity } from '../data/activities';
 import { categoryBadge } from '../data/activities';
+import { MapButton } from './MapButton';
 
 interface ActivityDetailProps {
   activity: Activity;
@@ -36,24 +37,14 @@ export default function ActivityDetail({ activity }: ActivityDetailProps) {
 
   return (
     <div className="min-h-screen bg-[#0a0f0d] overflow-x-hidden">
-      {/* ── Back to Map (floating mountain icon) ── */}
+      {/* ── Map (activity location) ── */}
       <motion.div
         className="fixed top-3 sm:top-6 left-3 sm:left-6 z-50"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.5, duration: 0.6 }}
       >
-        <Link
-          href="/"
-          className="group flex items-center gap-2 backdrop-blur-xl bg-[#0a0f0d]/70 border border-white/10 rounded-full px-3 py-2 sm:px-4 sm:py-2.5 text-white/70 hover:text-white hover:border-amber-400/40 transition-all cursor-pointer"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:text-amber-400 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 20l9-14 9 14" />
-            <path d="M8 15l5-7 5 7" />
-            <path d="M12 14v6" />
-          </svg>
-          <span className="font-outfit text-xs sm:text-sm tracking-wide">Map</span>
-        </Link>
+        <MapButton activity={activity} />
       </motion.div>
 
       {/* ── Hero with parallax background ── */}

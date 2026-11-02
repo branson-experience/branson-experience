@@ -330,7 +330,7 @@ Respond with ONLY a JSON object:
         const msg = `${activity.name} → archived (${activeActivities.length} > ${maxActive} limit)`;
         changes.push(msg);
         log('info', `[pool] ${msg}`);
-        await logDecision(meetingId, activity.id, 'inactive', msg);
+        await logDecision(meetingId, activity.id, 'remove', msg);
       }
     }
 
@@ -348,7 +348,7 @@ Respond with ONLY a JSON object:
         const msg = `${activity.name} → activated from ${activity.status}`;
         changes.push(msg);
         log('info', `[pool] ${msg}`);
-        await logDecision(meetingId, activity.id, 'activate', msg);
+        await logDecision(meetingId, activity.id, 'add', msg);
       }
     }
 
@@ -604,7 +604,7 @@ Respond with ONLY a JSON object:
           const msg = `🔄 Rotation out: "${item.name}" (score: ${item.score ?? 'N/A'})`;
           rotationChanges.push(msg);
           log('info', `[rotation] ${msg}`);
-          await logDecision(meetingId, item.id, 'rotate-out', `Rotated out — score ${item.score ?? 'low'}`);
+          await logDecision(meetingId, item.id, 'remove', `Rotated out — score ${item.score ?? 'low'}`);
           // Remove from added this cycle so it doesn't block
           const idx = addedIds.indexOf(item.id);
           if (idx !== -1) addedIds.splice(idx, 1);
