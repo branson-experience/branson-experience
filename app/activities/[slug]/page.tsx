@@ -1,11 +1,30 @@
 import { getActivityBySlug } from '../../data/activities';
 import ActivityDetail from '../../components/ActivityDetail';
 import { notFound } from 'next/navigation';
-import type { Activity } from '../../data/activities';
+import type { Activity, Activity as ActivityInterface } from '../../data/activities';
+import type { Metadata } from 'next';
 
 interface PageProps {
   params: { slug: string };
 }
+
+// All known slugs from static + DB for prerendering — revalidates every hour
+const KNOWN_SLUGS = [
+  'silver-dollar-city',
+  'table-rock-lake',
+  'titanic-museum',
+  'shepherd-of-the-hills',
+  'dolly-parton-stampede',
+  'branson-landing',
+];
+
+// Let Vercel handle on-demand routes for any other slug
+export function generateStaticParams() {
+  return KNOWN_SLUGS.map(slug => ({ slug }));
+}
+
+// Revalidate every 30 minutes so new DB activities show up
+export const revalidate = 1800;
 
 /** Load an activity from the API/DB by slug, mapped to the Activity type. */
 async function loadFromApi(slug: string): Promise<Activity | null> {
@@ -13,7 +32,9 @@ async function loadFromApi(slug: string): Promise<Activity | null> {
     cache: 'no-store',
   });
   if (!res.ok) return null;
-  const activities = await res.json();
+  const activities = (await res.json()) as Array<{
+    id: string; slug: string; title: string; category: string; hotspotX: number; hotspotY: number; image: string; score: number;
+  }>;
   const match = activities.find(a => a.slug === slug);
   if (!match) return null;
 
