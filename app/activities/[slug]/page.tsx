@@ -1,154 +1,118 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { getActivityBySlug } from '../../data/activities';
 import type { Activity } from '../../data/activities';
+import ActivityDetailPage from './ActivityDetailPage';
 
-export default function ActivityPageDynamic() {
-  const params = useParams();
-  const slug = params?.slug as string;
-  const [activity, setActivity] = useState<Activity | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mkzbfiwfnkpvhxvuvuqr.supabase.co';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-  useEffect(() => {
-    if (!slug) {
-      setError('No activity selected');
-      setLoading(false);
-      return;
+function toSlug(name: string): string {
+  return name.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+async function fetchApiActivities(): Promise<Activity[]> {
+  try {
+    const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/activities?select=*&status=eq.active&order=name.asc`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+    if (!dbRes.ok) return [];
+    const records = await dbRes.json();
+
+    // Build static lookup for hotspot coordinates
+    const staticMap: Record<string, Activity> = {};
+    try {
+      const { activities: staticActivities } = await import('../../data/activities');
+      for (const a of staticActivities) {
+        staticMap[a.slug] = a;
+      }
+    } catch {
+      // ignore
     }
 
-    fetch('/api/activities')
-      .then(async res => {
-        if (!res.ok) throw new Error('Failed to load activities');
-        const list: Array<{
-          slug: string; title: string; category: string; hotspotX: number; hotspotY: number; image: string; id: string;
-        }> = await res.json();
-        const match = list.find(a => a.slug === slug);
-        if (!match) throw new Error(`Activity not found: ${slug}`);
-        setActivity({
-          id: 'db-' + (match.id || slug),
-          slug: match.slug,
-          title: match.title,
-          tagline: `${match.category.charAt(0).toUpperCase() + match.category.slice(1)} attraction in Branson`,
-          category: match.category,
-          description: `Discover ${match.title} in Branson, Missouri — a top-rated ${match.category} attraction.`,
-          overview: `${match.title} is one of Branson's premier ${match.category} attractions, offering a unique experience for visitors of all ages.`,
-          highlights: ['Top-rated experience', 'Located in the heart of Branson', 'Must-visit destination'],
-          images: [match.image, '/images/ozark-mountain-1.jpg', '/images/pexels-ozarks-autumn-HD.jpg'],
-          videoUrls: [],
-          rating: 4.5,
-          reviews: [],
-          contact: {
-            phone: '',
-            website: '',
-            hours: 'Hours vary — check the website',
-            address: 'Branson, MO 65616',
-          },
-          hotspotX: match.hotspotX || 50,
-          hotspotY: match.hotspotY || 50,
-          seasonal: ['spring', 'summer', 'fall', 'winter'],
-          priceRange: '$–$$',
-          bestFor: ['Families', 'All Ages'],
-          duration: '2–3 Hours',
-        });
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [slug]);
+    const images = ['/images/ozark-mountain-1.jpg', '/images/ozark-mountain-2.jpg', '/images/pexels-ozarks-autumn-HD.jpg'];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
-        <p className="text-white/60 text-lg animate-pulse">Loading activity...</p>
-      </div>
-    );
+    return records.map((record: Record<string, unknown>) => {
+      const name = record.name as string;
+      const slug = toSlug(name);
+      const staticMatch = staticMap[slug];
+      const title = (record.full_name as string) || name;
+      const imgIdx = (name.length) % images.length;
+      const img = staticMatch ? (staticMatch.images[imgIdx % staticMatch.images.length] || images[imgIdx]) : images[imgIdx];
+
+      let hx: number, hy: number;
+      if (staticMatch) {
+        hx = staticMatch.hotspotX;
+        hy = staticMatch.hotspotY;
+      } else {
+        const hash = name.split('').reduce((acc, c) => ((acc << 5) + acc + c.charCodeAt(0)) & 0xFFFF, 0);
+        hx = 15 + (hash % 70);
+        hy = 15 + ((hash >> 7) % 70);
+      }
+
+      return {
+        id: 'db-' + (record.id as string),
+        slug,
+        title: title.replace(/\b\w/g, c => c.toUpperCase()),
+        tagline: `${record.category as string} attraction in Branson`,
+        category: record.category as string,
+        description: `Discover ${title} in Branson, Missouri — a top-rated ${record.category} attraction.`,
+        overview: `${title} is one of Branson's premier ${record.category} attractions, offering a unique experience for visitors of all ages.`,
+        highlights: ['Top-rated experience', 'Located in the heart of Branson', 'Must-visit destination'],
+        images: [img, images[(imgIdx + 1) % images.length], images[(imgIdx + 2) % images.length]],
+        videoUrls: [],
+        rating: 4.5,
+        reviews: [],
+        contact: {
+          phone: '',
+          website: '',
+          hours: 'Hours vary — check the website',
+          address: 'Branson, MO 65616',
+        },
+        hotspotX: hx,
+        hotspotY: hy,
+        seasonal: ['spring', 'summer', 'fall', 'winter'],
+        priceRange: '$–$$',
+        bestFor: ['Families', 'All Ages'],
+        duration: '2–3 Hours',
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export default async function ActivityPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+
+  // 1) Check static data first
+  const staticActivity = getActivityBySlug(slug);
+  if (staticActivity) {
+    return <ActivityDetailPage activity={staticActivity} />;
   }
 
-  if (error || !activity) {
+  // 2) Fetch from DB
+  const activities = await fetchApiActivities();
+  const dbActivity = activities.find(a => a.slug === slug);
+  if (!dbActivity) {
     return (
       <div className="min-h-screen bg-[#0a0f0d] flex flex-col items-center justify-center gap-4">
         <h1 className="text-4xl text-white/80">Activity Not Found</h1>
-        <p className="text-white/50">{error}</p>
-        <Link href="/" className="text-amber-400 hover:text-amber-300 underline">
-          ← Back to Branson Experience
-        </Link>
+        <p className="text-white/50">&ldquo;{slug}&rdquo; does not exist</p>
+        <a href="/" className="text-amber-400 hover:text-amber-300 underline">← Back</a>
       </div>
     );
   }
 
-  return <DynamicActivityDetail activity={activity} />;
+  return <ActivityDetailPage activity={dbActivity} />;
 }
 
-function DynamicActivityDetail({ activity }: { activity: Activity }) {
-  return (
-    <div className="min-h-screen bg-[#0a0f0d] text-white">
-      <div className="relative h-[50vh] flex items-end">
-        <img
-          src={activity.images[0]}
-          alt={activity.title}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d] via-transparent to-transparent" />
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-8">
-          <Link href="/" className="text-amber-400/80 hover:text-amber-300 text-sm mb-4 inline-block">
-            ← Back to Activities
-          </Link>
-          <h1 className="text-5xl font-bold mb-2">{activity.title}</h1>
-          <span className="inline-block px-3 py-1 bg-amber-400/20 text-amber-400 text-sm rounded-full border border-amber-400/30">
-            {activity.category}
-          </span>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-6 py-12 space-y-8">
-        <p className="text-lg text-white/80 leading-relaxed">{activity.description}</p>
-        <p className="text-white/60">{activity.overview}</p>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Highlights</h2>
-            <ul className="space-y-2">
-              {activity.highlights.map((h, i) => (
-                <li key={i} className="flex items-start gap-2 text-white/80">
-                  <span className="text-amber-400 mt-1">✦</span>
-                  {h}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Details</h2>
-            <dl className="space-y-3 text-white/70">
-              {[
-                ['Category', activity.category],
-                ['Price Range', activity.priceRange],
-                ['Duration', activity.duration],
-                ['Contact', activity.contact.phone || 'Check website'],
-              ].map(([label, value]) => (
-                <div key={label} className="flex justify-between">
-                  <dt>{label}</dt>
-                  <dd className="text-white/90">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-
-        {activity.contact.website && (
-          <div className="text-center pt-6">
-            <a
-              href={activity.contact.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-8 py-3 bg-amber-400/20 text-amber-400 border border-amber-400/40 rounded-lg hover:bg-amber-400/30 transition-colors"
-            >
-              Visit Official Website
-            </a>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// Revalidate every 10 minutes — catches new DB activities
+export const revalidate = 600;
