@@ -1,24 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import type { Activity } from '../../data/activities';
 
-export default function ActivityPageDynamic({ params }: { params: { slug: string } }) {
+export default function ActivityPageDynamic() {
+  const params = useParams();
+  const slug = params?.slug as string;
   const [activity, setActivity] = useState<Activity | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/activities`, { cache: 'no-store' })
+    if (!slug) {
+      setError('No activity selected');
+      setLoading(false);
+      return;
+    }
+
+    fetch('/api/activities')
       .then(async res => {
-        if (!res.ok) throw new Error('Failed to load');
-        const list = await res.json();
-        const match = list.find(a => a.slug === params.slug);
-        if (!match) throw new Error('Activity not found');
+        if (!res.ok) throw new Error('Failed to load activities');
+        const list: Array<{
+          slug: string; title: string; category: string; hotspotX: number; hotspotY: number; image: string; id: string;
+        }> = await res.json();
+        const match = list.find(a => a.slug === slug);
+        if (!match) throw new Error(`Activity not found: ${slug}`);
         setActivity({
-          id: 'db-' + (match.id || params.slug),
+          id: 'db-' + (match.id || slug),
           slug: match.slug,
           title: match.title,
           tagline: `${match.category.charAt(0).toUpperCase() + match.category.slice(1)} attraction in Branson`,
@@ -44,9 +54,9 @@ export default function ActivityPageDynamic({ params }: { params: { slug: string
           duration: '2–3 Hours',
         });
       })
-      .catch(err => setError(err.message))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [params.slug]);
+  }, [slug]);
 
   if (loading) {
     return (
@@ -68,15 +78,12 @@ export default function ActivityPageDynamic({ params }: { params: { slug: string
     );
   }
 
-  // Render the full ActivityDetail component
   return <DynamicActivityDetail activity={activity} />;
 }
 
-// Inline client-side ActivityDetail rendering
 function DynamicActivityDetail({ activity }: { activity: Activity }) {
   return (
     <div className="min-h-screen bg-[#0a0f0d] text-white">
-      {/* Hero */}
       <div className="relative h-[50vh] flex items-end">
         <img
           src={activity.images[0]}
@@ -95,7 +102,6 @@ function DynamicActivityDetail({ activity }: { activity: Activity }) {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-5xl mx-auto px-6 py-12 space-y-8">
         <p className="text-lg text-white/80 leading-relaxed">{activity.description}</p>
         <p className="text-white/60">{activity.overview}</p>
