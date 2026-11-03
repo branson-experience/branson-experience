@@ -1,6 +1,8 @@
 import { getActivityBySlug } from '../../data/activities';
 import type { Activity } from '../../data/activities';
 import ActivityDetailPage from './ActivityDetailPage';
+import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mkzbfiwfnkpvhxvuvuqr.supabase.co';
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -89,8 +91,8 @@ async function fetchApiActivities(): Promise<Activity[]> {
   }
 }
 
-export default async function ActivityPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default async function ActivityPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
   // 1) Check static data first
   const staticActivity = getActivityBySlug(slug);
