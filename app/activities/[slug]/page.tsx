@@ -59,31 +59,32 @@ async function fetchApiActivities(): Promise<Activity[]> {
         hy = 15 + ((hash >> 7) % 70);
       }
 
+      const md = (record.metadata as Record<string, unknown>) || {};
       return {
         id: 'db-' + (record.id as string),
         slug,
         title: title.replace(/\b\w/g, c => c.toUpperCase()),
         tagline: `${record.category as string} attraction in Branson`,
         category: record.category as string,
-        description: `Discover ${title} in Branson, Missouri — a top-rated ${record.category} attraction.`,
-        overview: `${title} is one of Branson's premier ${record.category} attractions, offering a unique experience for visitors of all ages.`,
-        highlights: ['Top-rated experience', 'Located in the heart of Branson', 'Must-visit destination'],
+        description: (md.description as string) || `Discover ${title} in Branson, Missouri — a top-rated ${record.category} attraction.`,
+        overview: (md.overview as string) || `${title} is one of Branson's premier ${record.category} attractions, offering a unique experience for visitors of all ages.`,
+        highlights: (md.highlights as string[]) || ['Top-rated experience', 'Located in the heart of Branson', 'Must-visit destination'],
         images: [img, images[(imgIdx + 1) % images.length], images[(imgIdx + 2) % images.length]],
-        videoUrls: [],
+        videoUrls: (md.videoUrls as string[]) || [],
         rating: 4.5,
         reviews: [],
         contact: {
-          phone: '',
-          website: '',
-          hours: 'Hours vary — check the website',
-          address: 'Branson, MO 65616',
+          phone: (md.phone as string) || '',
+          website: (md.website as string) || '',
+          hours: (md.hours as string) || 'Hours vary — check the website',
+          address: (md.address as string) || 'Branson, MO 65616',
         },
         hotspotX: hx,
         hotspotY: hy,
-        seasonal: ['spring', 'summer', 'fall', 'winter'],
-        priceRange: '$–$$',
-        bestFor: ['Families', 'All Ages'],
-        duration: '2–3 Hours',
+        seasonal: (md.seasonal as string[]) || ['spring', 'summer', 'fall', 'winter'],
+        priceRange: (md.priceRange as string) || '$–$$',
+        bestFor: (md.bestFor as string[]) || ['Families', 'All Ages'],
+        duration: (md.duration as string) || '2–3 Hours',
       };
     });
   } catch {
