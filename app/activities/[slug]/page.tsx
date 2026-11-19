@@ -19,7 +19,6 @@ function toSlug(name: string): string {
 // (no API key needed). Returns null if nothing is found.
 async function findYouTubeVideo(query: string): Promise<string | null> {
   try {
-    console.log("query: " + query);
     const res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
       cache: 'no-store',
@@ -87,7 +86,8 @@ async function fetchApiActivities(): Promise<Activity[]> {
         videoUrls = [u.includes('/embed/') ? u : `https://www.youtube.com/embed/${u}`];
       }
       if (videoUrls.length === 0) {
-        const embed = await findYouTubeVideo(`${title} Branson Missouri official video`);
+        const embed = await findYouTubeVideo(`${title} Branson Missouri`);
+        console.log(`${title} Branson Missouri`);
         if (embed) videoUrls = [embed];
       }
 
