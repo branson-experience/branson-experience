@@ -87,7 +87,7 @@ async function fetchApiActivities(): Promise<Activity[]> {
       }
       if (videoUrls.length === 0) {
         const embed = await findYouTubeVideo(`${title} Branson Missouri`);
-        console.log(`${title} Branson Missouri`);
+        console.log(`Searching: ${title} Branson Missouri`, { embed });
         if (embed) videoUrls = [embed];
       }
 
