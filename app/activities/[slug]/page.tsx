@@ -19,15 +19,25 @@ function toSlug(name: string): string {
 // (no API key needed). Returns null if nothing is found.
 async function findYouTubeVideo(query: string): Promise<string | null> {
   try {
+    console.log(`[video] searching YouTube for: "${query}"`);
     const res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.log(`[video] YouTube search failed (HTTP ${res.status}) — no video`);
+      return null;
+    }
     const html = await res.text();
     const match = html.match(/"videoId"\s*:\s*"([\w-]{11})"/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
-  } catch {
+    if (match) {
+      console.log(`[video] found videoId "${match[1]}" → https://www.youtube.com/embed/${match[1]}`);
+      return `https://www.youtube.com/embed/${match[1]}`;
+    }
+    console.log('[video] no videoId in search results — no video');
+    return null;
+  } catch (err) {
+    console.log(`[video] YouTube search error: ${err instanceof Error ? err.message : err} — no video`);
     return null;
   }
 }
@@ -81,13 +91,15 @@ async function fetchApiActivities(): Promise<Activity[]> {
       // Video: prefer metadata; otherwise fall back to a YouTube search so
       // every activity page has a video section
       let videoUrls = (md.videoUrls as string[]) || [];
-      if (videoUrls.length === 0 && md.youtubeUrl) {
+      if (videoUrls.length > 0) {
+        console.log(`[video] "${title}": using metadata.videoUrls (${videoUrls.length})`);
+      } else if (md.youtubeUrl) {
         const u = String(md.youtubeUrl);
         videoUrls = [u.includes('/embed/') ? u : `https://www.youtube.com/embed/${u}`];
-      }
-      if (videoUrls.length === 0) {
+        console.log(`[video] "${title}": using metadata.youtubeUrl → ${videoUrls[0]}`);
+      } else {
+        console.log(`[video] "${title}": no metadata video — falling back to YouTube search`);
         const embed = await findYouTubeVideo(`${title} Branson Missouri`);
-        console.log(`Searching: ${title} Branson Missouri`, { embed });
         if (embed) videoUrls = [embed];
       }
 
