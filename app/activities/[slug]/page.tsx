@@ -15,6 +15,23 @@ function toSlug(name: string): string {
     .replace(/^-|-$/g, '');
 }
 
+// Find a YouTube embed URL for an activity by parsing YouTube search results
+// (no API key needed). Returns null if nothing is found.
+async function findYouTubeVideo(query: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const match = html.match(/"videoId"\s*:\s*"([\w-]{11})"/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchApiActivities(): Promise<Activity[]> {
   try {
     const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/activities?select=*&status=eq.active&order=name.asc`, {
@@ -41,7 +58,7 @@ async function fetchApiActivities(): Promise<Activity[]> {
 
     const images = ['/images/ozark-mountain-1.jpg', '/images/ozark-mountain-2.jpg', '/images/pexels-ozarks-autumn-HD.jpg'];
 
-    return records.map((record: Record<string, unknown>) => {
+    return Promise.all(records.map(async (record: Record<string, unknown>) => {
       const name = record.name as string;
       const slug = toSlug(name);
       const staticMatch = staticMap[slug];
@@ -60,6 +77,19 @@ async function fetchApiActivities(): Promise<Activity[]> {
       }
 
       const md = (record.metadata as Record<string, unknown>) || {};
+
+      // Video: prefer metadata; otherwise fall back to a YouTube search so
+      // every activity page has a video section
+      let videoUrls = (md.videoUrls as string[]) || [];
+      if (videoUrls.length === 0 && md.youtubeUrl) {
+        const u = String(md.youtubeUrl);
+        videoUrls = [u.includes('/embed/') ? u : `https://www.youtube.com/embed/${u}`];
+      }
+      if (videoUrls.length === 0) {
+        const embed = await findYouTubeVideo(`${title} Branson Missouri official video`);
+        if (embed) videoUrls = [embed];
+      }
+
       return {
         id: 'db-' + (record.id as string),
         slug,
@@ -70,7 +100,7 @@ async function fetchApiActivities(): Promise<Activity[]> {
         overview: (md.overview as string) || `${title} is one of Branson's premier ${record.category} attractions, offering a unique experience for visitors of all ages.`,
         highlights: (md.highlights as string[]) || ['Top-rated experience', 'Located in the heart of Branson', 'Must-visit destination'],
         images: [img, images[(imgIdx + 1) % images.length], images[(imgIdx + 2) % images.length]],
-        videoUrls: (md.videoUrls as string[]) || [],
+        videoUrls,
         rating: 4.5,
         reviews: [],
         contact: {
@@ -86,7 +116,7 @@ async function fetchApiActivities(): Promise<Activity[]> {
         bestFor: (md.bestFor as string[]) || ['Families', 'All Ages'],
         duration: (md.duration as string) || '2–3 Hours',
       };
-    });
+    }));
   } catch {
     return [];
   }

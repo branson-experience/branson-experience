@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Dynamic `/activities/[slug]` route so activities that exist only in Supabase (not hardcoded in `app/data/activities.ts`) get their own detail pages
 - Contact information for DB-only activities read from the `metadata` JSONB column
+- Video fallback for DB activities: uses `metadata.videoUrls` or `metadata.youtubeUrl` if set, otherwise searches YouTube for a relevant official video so every detail page has a video section
 
 ### Changed
 - Detail pages for DB activities are fetched server-side directly from Supabase in the `[slug]` route
