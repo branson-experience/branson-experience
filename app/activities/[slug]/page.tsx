@@ -99,7 +99,7 @@ async function fetchApiActivities(): Promise<Activity[]> {
         console.log(`[video] "${title}": using metadata.youtubeUrl → ${videoUrls[0]}`);
       } else {
         console.log(`[video] "${title}": no metadata video — falling back to YouTube search`);
-        const embed = await findYouTubeVideo(`${title} #branson Branson Mo`);
+        const embed = await findYouTubeVideo(`${title}  official commercial branson mo`);
         if (embed) videoUrls = [embed];
       }
 
