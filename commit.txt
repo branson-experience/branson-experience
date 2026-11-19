@@ -12,3 +12,5 @@ repo: https://github.com/branson-experience/branson-experience.git
    git add . && git commit -m "See Changelog.md" && git push
 
 ## Dev Only
+
+pm2 restart ozarks-branson && sleep 1 && curl -s -o /dev/null -w "index: %{http_code}\n" http://localhost:3012/ && curl -s -o /dev/null -w "style.css: %{http_code}\n" http://localhost:3012/css/style.css && curl -s -o /dev/null -w "main.js: %{http_code}\n" http://localhost:3012/js/main.js && curl -s -o /dev/null -w "favicon.svg: %{http_code}\n" http://localhost:3012/favicon.svg
